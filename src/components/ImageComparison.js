@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import OpenAI from 'openai';
+import ImageOverlay from './ImageOverlay';
 
 function ImageComparison() {
   const [referenceImage, setReferenceImage] = useState(null);
@@ -58,14 +59,14 @@ function ImageComparison() {
         messages: [
           {
             role: "system",
-            content: "You are a photo comparison expert. Provide both brief directions and detailed guidance."
+            content: "You are a photo comparison expert. Your task is to guide the user on how to adjust their comparison photo to match the reference photo. Provide clear, actionable directions from the user's perspective."
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Compare these two photos and provide guidance in exactly this format:\n\nAngle - [ONE WORD DIRECTION] | [detailed guidance]\nDistance - [ONE WORD DIRECTION] | [detailed guidance]\nComposition - [ONE WORD DIRECTION] | [detailed guidance]\nLighting - [ONE WORD DIRECTION] | [detailed guidance]\n\nExample format:\nAngle - HIGHER | Raise the camera about 15 degrees\nUse | as separator between direction and details."
+                text: "Compare these two photos. The first is the reference photo (goal), and the second is the user's current photo. Tell the user what actions they need to take to make their photo match the reference.\n\nProvide guidance in exactly this format:\n\nAngle - [ACTION USER NEEDS TO TAKE] | [detailed explanation]\nDistance - [ACTION USER NEEDS TO TAKE] | [detailed explanation]\nComposition - [ACTION USER NEEDS TO TAKE] | [detailed explanation]\nLighting - [ACTION USER NEEDS TO TAKE] | [detailed explanation]\n\nExample format:\nAngle - LOWER | Move your camera down by about 15 degrees\nDistance - CLOSER | Step forward about 2 feet\n\nUse | as separator. The action should be a single word describing what the user needs to do (e.g., LOWER, HIGHER, CLOSER, FARTHER, LEFT, RIGHT, etc.)."
               },
               {
                 type: "image_url",
@@ -159,13 +160,19 @@ function ImageComparison() {
       </div>
 
       {referenceImage && compareImage && (
-        <button 
-          onClick={analyzeImages} 
-          disabled={isAnalyzing}
-          className="analyze-button"
-        >
-          {isAnalyzing ? 'Analyzing...' : 'Analyze Photos'}
-        </button>
+        <>
+          <ImageOverlay 
+            referenceImage={referenceImage} 
+            compareImage={compareImage}
+          />
+          <button 
+            onClick={analyzeImages} 
+            disabled={isAnalyzing}
+            className="analyze-button"
+          >
+            {isAnalyzing ? 'Analyzing...' : 'Analyze Photos'}
+          </button>
+        </>
       )}
 
       {guidance.length > 0 && (
