@@ -7,6 +7,7 @@ function ImageComparison() {
   const [compareImage, setCompareImage] = useState(null);
   const [guidance, setGuidance] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [expandedRows, setExpandedRows] = useState(new Set());
 
   // Initialize OpenAI client
   const openai = new OpenAI({
@@ -125,35 +126,63 @@ function ImageComparison() {
     }
   };
 
+  const toggleDetails = (index) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedRows(newExpanded);
+  };
+
   return (
     <div className="image-comparison">
       <h1>Photo Comparison Guide</h1>
       
       <div className="upload-section">
         <div className="upload-container">
-          <h2>Reference Photo</h2>
           <input
             type="file"
             accept="image/*"
             onChange={(e) => handleImageUpload(e, setReferenceImage)}
+            className="upload-input"
+            id="reference-upload"
           />
-          {referenceImage && (
+          {!referenceImage ? (
+            <label htmlFor="reference-upload" className="upload-label">
+              <span className="upload-icon">📷</span>
+              <span className="upload-text">Upload Reference Photo</span>
+            </label>
+          ) : (
             <div className="image-preview">
               <img src={referenceImage} alt="Reference" />
+              <label htmlFor="reference-upload" className="change-photo">
+                📷
+              </label>
             </div>
           )}
         </div>
 
         <div className="upload-container">
-          <h2>Comparison Photo</h2>
           <input
             type="file"
             accept="image/*"
             onChange={(e) => handleImageUpload(e, setCompareImage)}
+            className="upload-input"
+            id="compare-upload"
           />
-          {compareImage && (
+          {!compareImage ? (
+            <label htmlFor="compare-upload" className="upload-label">
+              <span className="upload-icon">📷</span>
+              <span className="upload-text">Upload Comparison Photo</span>
+            </label>
+          ) : (
             <div className="image-preview">
               <img src={compareImage} alt="Comparison" />
+              <label htmlFor="compare-upload" className="change-photo">
+                📷
+              </label>
             </div>
           )}
         </div>
@@ -170,7 +199,7 @@ function ImageComparison() {
             disabled={isAnalyzing}
             className="analyze-button"
           >
-            {isAnalyzing ? 'Analyzing...' : 'Analyze Photos'}
+            {isAnalyzing ? 'Analyzing...' : 'Compare Photos'}
           </button>
         </>
       )}
@@ -180,8 +209,17 @@ function ImageComparison() {
           {guidance.map((item, index) => (
             <div key={index} className="guidance-row">
               <span className="guidance-category">{item.category}</span>
-              <span className="guidance-direction">{item.direction}</span>
-              <span className="guidance-details">{item.details}</span>
+              <span 
+                className={`guidance-direction ${expandedRows.has(index) ? 'expanded' : ''}`}
+                onClick={() => toggleDetails(index)}
+              >
+                {item.direction}
+              </span>
+              <span 
+                className={`guidance-details ${expandedRows.has(index) ? 'visible' : ''}`}
+              >
+                {item.details}
+              </span>
             </div>
           ))}
         </div>
