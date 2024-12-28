@@ -113,6 +113,43 @@ class CameraModel: NSObject, ObservableObject {
         }
     }
     
+    func deletePhoto() {
+        recentImage = nil
+        isPhotoTaken = false
+        // Auto restart camera preview
+        if !session.isRunning {
+            DispatchQueue.global(qos: .userInitiated).async {
+                self.session.startRunning()
+            }
+        }
+    }
+    
+    func savePhotoAndReopen() {
+        if let image = recentImage {
+            // Save to camera roll
+            UIImageWriteToSavedPhotosAlbum(image, self, #selector(self.image(_:didFinishSavingWithError:contextInfo:)), nil)
+        }
+        // Clear and reopen camera
+        recentImage = nil
+        isPhotoTaken = false
+        if !session.isRunning {
+            DispatchQueue.global(qos: .userInitiated).async {
+                self.session.startRunning()
+            }
+        }
+    }
+    
+    func discardPhotoAndReopen() {
+        // Just clear and reopen camera without saving
+        recentImage = nil
+        isPhotoTaken = false
+        if !session.isRunning {
+            DispatchQueue.global(qos: .userInitiated).async {
+                self.session.startRunning()
+            }
+        }
+    }
+    
     private func checkPermissions() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
@@ -183,9 +220,6 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
                 self.recentImage = image
                 self.isPhotoTaken = true
                 self.session.stopRunning()
-                
-                // Save to camera roll
-                UIImageWriteToSavedPhotosAlbum(image, self, #selector(self.image(_:didFinishSavingWithError:contextInfo:)), nil)
             }
         }
     }
@@ -403,7 +437,7 @@ struct ContentView: View {
                                 ZoomableImageView(image: referenceImage, shouldReset: $shouldResetImage, isLandscape: true)
                                 
                                 // Buttons row
-                                VStack(spacing: 12) {
+                                HStack(spacing: 12) {
                                     Button(action: {
                                         shouldResetImage = true
                                     }) {
@@ -462,13 +496,25 @@ struct ContentView: View {
                                         .frame(maxWidth: geometry.size.width)
                                         .frame(maxHeight: geometry.size.height)
                                     
-                                    Button(action: {
-                                        camera.retakePhoto()
-                                    }) {
-                                        Image(systemName: "arrow.counterclockwise.circle.fill")
-                                            .font(.system(size: buttonSize))
-                                            .foregroundColor(.red)
-                                            .background(Circle().fill(Color.white))
+                                    // Buttons row
+                                    HStack(spacing: 12) {
+                                        Button(action: {
+                                            camera.discardPhotoAndReopen()
+                                        }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.system(size: buttonSize))
+                                                .foregroundColor(.red)
+                                                .background(Circle().fill(Color.white))
+                                        }
+                                        
+                                        Button(action: {
+                                            camera.savePhotoAndReopen()
+                                        }) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: buttonSize))
+                                                .foregroundColor(.green)
+                                                .background(Circle().fill(Color.white))
+                                        }
                                     }
                                     .padding([.bottom, .trailing], 16)
                                 }
@@ -495,8 +541,9 @@ struct ContentView: View {
                                                 Image(systemName: "xmark.circle.fill")
                                                     .font(.system(size: buttonSize))
                                                     .foregroundColor(.white)
-                                                    .padding(8)
+                                                    .background(Circle().fill(Color.black.opacity(0.5)))
                                             }
+                                            .padding([.top, .trailing], 16)
                                         }
                                         
                                         Spacer()
@@ -533,7 +580,7 @@ struct ContentView: View {
                                 ZoomableImageView(image: referenceImage, shouldReset: $shouldResetImage, isLandscape: false)
                                 
                                 // Buttons row
-                                VStack(spacing: 12) {
+                                HStack(spacing: 12) {
                                     Button(action: {
                                         shouldResetImage = true
                                     }) {
@@ -585,23 +632,34 @@ struct ContentView: View {
                                     .foregroundColor(.blue)
                             }
                         } else if let capturedImage = camera.recentImage, camera.isPhotoTaken {
-                            // Show captured photo with retake button
+                            // Show captured photo with buttons
                             ZStack(alignment: .bottomTrailing) {
                                 Image(uiImage: capturedImage)
                                     .resizable()
                                     .scaledToFit()
                                     .frame(maxWidth: .infinity)
                                 
-                                // Retake button
-                                Button(action: {
-                                    camera.retakePhoto()
-                                }) {
-                                    Image(systemName: "arrow.counterclockwise.circle.fill")
-                                        .font(.system(size: buttonSize))
-                                        .foregroundColor(.red)
-                                        .background(Circle().fill(Color.white))
-                                        .padding([.bottom, .trailing], 16)
+                                // Buttons row
+                                HStack(spacing: 12) {
+                                    Button(action: {
+                                        camera.discardPhotoAndReopen()
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: buttonSize))
+                                            .foregroundColor(.red)
+                                            .background(Circle().fill(Color.white))
+                                    }
+                                    
+                                    Button(action: {
+                                        camera.savePhotoAndReopen()
+                                    }) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: buttonSize))
+                                            .foregroundColor(.green)
+                                            .background(Circle().fill(Color.white))
+                                    }
                                 }
+                                .padding([.bottom, .trailing], 16)
                             }
                         } else {
                             // Show camera preview with correct aspect ratio
@@ -619,7 +677,6 @@ struct ContentView: View {
                                     
                                     // Camera controls overlay
                                     VStack {
-                                        // Close camera preview button
                                         HStack {
                                             Spacer()
                                             Button(action: {
@@ -628,8 +685,9 @@ struct ContentView: View {
                                                 Image(systemName: "xmark.circle.fill")
                                                     .font(.system(size: buttonSize))
                                                     .foregroundColor(.white)
-                                                    .padding(8)
+                                                    .background(Circle().fill(Color.black.opacity(0.5)))
                                             }
+                                            .padding([.top, .trailing], 16)
                                         }
                                         
                                         Spacer()
