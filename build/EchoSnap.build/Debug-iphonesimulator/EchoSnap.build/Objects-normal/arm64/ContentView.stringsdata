@@ -1,0 +1,24 @@
+{
+  "source": "/Users/justinchencya/Documents/AI Apps/EchoSnap/EchoSnap/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Select Reference Image",
+        "location": {
+          "startingColumn": 55,
+          "startingLine": 165
+        }
+      },
+      {
+        "comment": "",
+        "key": "Change Reference Image",
+        "location": {
+          "startingColumn": 82,
+          "startingLine": 165
+        }
+      }
+    ]
+  },
+  "version": 1
+}
