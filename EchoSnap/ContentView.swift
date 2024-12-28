@@ -13,6 +13,7 @@ import UIKit
 struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
     let isLandscape: Bool
+    @Environment(\.colorScheme) private var colorScheme
     
     class VideoPreviewView: UIView {
         override class var layerClass: AnyClass {
@@ -26,7 +27,8 @@ struct CameraPreview: UIViewRepresentable {
     
     func makeUIView(context: Context) -> VideoPreviewView {
         let view = VideoPreviewView()
-        view.backgroundColor = .black
+        // Use system background color
+        view.backgroundColor = colorScheme == .dark ? .black : .systemBackground
         view.videoPreviewLayer.session = session
         view.videoPreviewLayer.videoGravity = .resizeAspect
         
@@ -42,6 +44,8 @@ struct CameraPreview: UIViewRepresentable {
     
     func updateUIView(_ uiView: VideoPreviewView, context: Context) {
         DispatchQueue.main.async {
+            // Update background color when theme changes
+            uiView.backgroundColor = colorScheme == .dark ? .black : .systemBackground
             uiView.videoPreviewLayer.frame = uiView.bounds
             
             // Update orientation
@@ -491,12 +495,16 @@ struct ContentView: View {
     
     // Helper view for the captured photo with buttons
     private func capturedPhotoView(image: UIImage, in geometry: GeometryProxy) -> some View {
-        ZStack(alignment: .bottomTrailing) {
+        let maxWidth = geometry.size.width * 0.9  // 90% of container width
+        let maxHeight = geometry.size.height * 0.9  // 90% of container height
+        
+        return ZStack(alignment: .bottomTrailing) {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth: geometry.size.width)
-                .frame(maxHeight: geometry.size.height)
+                .frame(maxWidth: maxWidth)
+                .frame(maxHeight: maxHeight)
+                .position(x: geometry.size.width/2, y: geometry.size.height/2)
             
             photoActionButtons()
         }
@@ -504,35 +512,44 @@ struct ContentView: View {
     
     // Helper view for the camera preview controls
     private func cameraPreviewControls() -> some View {
-        VStack {
-            HStack {
-                Spacer()
-                Button(action: {
-                    camera.togglePreview()
-                }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: buttonSize))
-                        .foregroundColor(.white)
-                        .background(Circle().fill(Color.black.opacity(0.5)))
+        GeometryReader { geometry in
+            VStack {
+                // Close button at top-right
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        camera.togglePreview()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: buttonSize))
+                            .foregroundColor(.white)
+                            .background(Circle().fill(Color.black.opacity(0.5)))
+                    }
+                    .padding([.top, .trailing], closeButtonPadding)
                 }
-                .padding([.top, .trailing], closeButtonPadding)
-            }
-            
-            Spacer()
-            
-            Button(action: {
-                camera.capturePhoto()
-            }) {
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: captureButtonSize, height: captureButtonSize)
-                    .overlay(
+                
+                Spacer()
+                
+                // Capture button centered at bottom
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        camera.capturePhoto()
+                    }) {
                         Circle()
-                            .stroke(Color.black.opacity(0.8), lineWidth: 2)
-                            .frame(width: captureButtonSize - 10, height: captureButtonSize - 10)
-                    )
-                    .padding(.bottom, 20)
+                            .fill(Color.white)
+                            .frame(width: captureButtonSize, height: captureButtonSize)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.black.opacity(0.8), lineWidth: 2)
+                                    .frame(width: captureButtonSize - 10, height: captureButtonSize - 10)
+                            )
+                    }
+                    Spacer()
+                }
+                .padding(.bottom, 20)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
     
@@ -546,6 +563,13 @@ struct ContentView: View {
             .background(Color.black.opacity(0.8))
     }
     
+    // Add background color properties
+    @Environment(\.colorScheme) private var colorScheme
+    
+    private var sectionBackground: Color {
+        colorScheme == .dark ? Color.black : Color(UIColor.systemBackground)
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             titleBanner()
@@ -556,7 +580,7 @@ struct ContentView: View {
                     HStack(spacing: 0) {
                         // Left half: Reference Image
                         ZStack {
-                            Color.black.opacity(0.1)
+                            sectionBackground
                             
                             if let referenceImage = referenceImage {
                                 ZStack(alignment: .bottomTrailing) {
@@ -599,7 +623,7 @@ struct ContentView: View {
                         
                         // Right half: Camera
                         ZStack {
-                            Color.black
+                            sectionBackground
                             
                             if !camera.isPreviewActive {
                                 Button(action: {
@@ -616,16 +640,16 @@ struct ContentView: View {
                                 }
                             } else {
                                 GeometryReader { geometry in
-                                    let availableHeight = geometry.size.height
-                                    let availableWidth = geometry.size.width
+                                    let availableHeight = geometry.size.height * 0.9  // 90% of container height
+                                    let availableWidth = geometry.size.width * 0.9  // 90% of container width
                                     let height = availableHeight
-                                    let width = min(height * 4/3, availableWidth * 0.95) // Limit width to 95% of available space
+                                    let width = min(height * 4/3, availableWidth)
                                     
                                     ZStack {
                                         CameraPreview(session: camera.session, isLandscape: isLandscape)
                                             .frame(width: width, height: height)
                                             .clipped()
-                                            .position(x: geometry.size.width/2, y: height/2)
+                                            .position(x: geometry.size.width/2, y: geometry.size.height/2)
                                         
                                         cameraPreviewControls()
                                     }
@@ -639,7 +663,7 @@ struct ContentView: View {
                     VStack(spacing: 0) {
                         // Top half: Reference Image or Icon Button
                         ZStack {
-                            Color.black.opacity(0.1)
+                            sectionBackground
                             
                             if let referenceImage = referenceImage {
                                 ZStack(alignment: .bottomTrailing) {
@@ -682,7 +706,7 @@ struct ContentView: View {
                         
                         // Bottom half: Camera Preview/Photo with Buttons
                         ZStack {
-                            Color.black
+                            sectionBackground
                             
                             if !camera.isPreviewActive {
                                 // Show camera icon when preview is off
@@ -695,81 +719,24 @@ struct ContentView: View {
                                         .foregroundColor(.blue)
                                 }
                             } else if let capturedImage = camera.recentImage, camera.isPhotoTaken {
-                                // Show captured photo with buttons
-                                ZStack(alignment: .bottomTrailing) {
-                                    Image(uiImage: capturedImage)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(maxWidth: .infinity)
-                                    
-                                    // Buttons row
-                                    HStack(spacing: 12) {
-                                        Button(action: {
-                                            camera.discardPhotoAndReopen()
-                                        }) {
-                                            Image(systemName: "xmark.circle.fill")
-                                                .font(.system(size: buttonSize))
-                                                .foregroundColor(.red)
-                                                .background(Circle().fill(Color.white))
-                                        }
-                                        
-                                        Button(action: {
-                                            camera.savePhotoAndReopen()
-                                        }) {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .font(.system(size: buttonSize))
-                                                .foregroundColor(.green)
-                                                .background(Circle().fill(Color.white))
-                                        }
-                                    }
-                                    .padding([.bottom, .trailing], 16)
+                                GeometryReader { geometry in
+                                    capturedPhotoView(image: capturedImage, in: geometry)
                                 }
                             } else {
                                 // Show camera preview with correct aspect ratio
                                 GeometryReader { geometry in
-                                    let availableWidth = geometry.size.width
-                                    let availableHeight = geometry.size.height
+                                    let availableWidth = geometry.size.width * 0.9  // 90% of container width
+                                    let availableHeight = geometry.size.height * 0.9  // 90% of container height
                                     let width = availableWidth
-                                    let height = min(width * 4/3, availableHeight * 0.95) // Limit height to 95% of available space
+                                    let height = min(width * 4/3, availableHeight)
                                     
                                     ZStack {
                                         CameraPreview(session: camera.session, isLandscape: isLandscape)
                                             .frame(width: width, height: height)
                                             .clipped()
-                                            .position(x: width/2, y: geometry.size.height/2)
+                                            .position(x: geometry.size.width/2, y: geometry.size.height/2)
                                         
-                                        // Camera controls overlay
-                                        VStack {
-                                            HStack {
-                                                Spacer()
-                                                Button(action: {
-                                                    camera.togglePreview()
-                                                }) {
-                                                    Image(systemName: "xmark.circle.fill")
-                                                        .font(.system(size: buttonSize))
-                                                        .foregroundColor(.white)
-                                                        .background(Circle().fill(Color.black.opacity(0.5)))
-                                                }
-                                                .padding([.top, .trailing], 16)
-                                            }
-                                            
-                                            Spacer()
-                                            
-                                            // Capture button
-                                            Button(action: {
-                                                camera.capturePhoto()
-                                            }) {
-                                                Circle()
-                                                    .fill(Color.white)
-                                                    .frame(width: captureButtonSize, height: captureButtonSize)
-                                                    .overlay(
-                                                        Circle()
-                                                            .stroke(Color.black.opacity(0.8), lineWidth: 2)
-                                                            .frame(width: captureButtonSize - 10, height: captureButtonSize - 10)
-                                                    )
-                                                    .padding(.bottom, 20)
-                                            }
-                                        }
+                                        cameraPreviewControls()
                                     }
                                 }
                             }
