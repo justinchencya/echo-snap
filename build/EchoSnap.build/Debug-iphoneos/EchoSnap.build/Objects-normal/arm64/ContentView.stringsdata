@@ -1,5 +1,16 @@
 {
   "source": "/Users/justinchencya/Documents/AI Apps/EchoSnap/EchoSnap/ContentView.swift",
-  "tables": {},
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "EchoSnap",
+        "location": {
+          "startingColumn": 14,
+          "startingLine": 541
+        }
+      }
+    ]
+  },
   "version": 1
 }
