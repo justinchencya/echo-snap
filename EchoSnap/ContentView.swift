@@ -27,14 +27,14 @@ struct CameraPreview: UIViewRepresentable {
     
     func makeUIView(context: Context) -> VideoPreviewView {
         let view = VideoPreviewView()
-        // Use system background color
         view.backgroundColor = colorScheme == .dark ? .black : .systemBackground
         view.videoPreviewLayer.session = session
         view.videoPreviewLayer.videoGravity = .resizeAspect
         
-        // Set initial orientation
+        // Set orientation based on device orientation
         if isLandscape {
-            view.videoPreviewLayer.connection?.videoOrientation = .landscapeRight
+            let deviceOrientation = UIDevice.current.orientation
+            view.videoPreviewLayer.connection?.videoOrientation = deviceOrientation == .landscapeLeft ? .landscapeRight : .landscapeLeft
         } else {
             view.videoPreviewLayer.connection?.videoOrientation = .portrait
         }
@@ -44,13 +44,13 @@ struct CameraPreview: UIViewRepresentable {
     
     func updateUIView(_ uiView: VideoPreviewView, context: Context) {
         DispatchQueue.main.async {
-            // Update background color when theme changes
             uiView.backgroundColor = colorScheme == .dark ? .black : .systemBackground
             uiView.videoPreviewLayer.frame = uiView.bounds
             
-            // Update orientation
+            // Update orientation based on device orientation
             if isLandscape {
-                uiView.videoPreviewLayer.connection?.videoOrientation = .landscapeRight
+                let deviceOrientation = UIDevice.current.orientation
+                uiView.videoPreviewLayer.connection?.videoOrientation = deviceOrientation == .landscapeLeft ? .landscapeRight : .landscapeLeft
             } else {
                 uiView.videoPreviewLayer.connection?.videoOrientation = .portrait
             }
@@ -89,7 +89,6 @@ class CameraModel: NSObject, ObservableObject {
     func capturePhoto() {
         let settings = AVCapturePhotoSettings()
         
-        // Configure photo orientation based on device orientation
         if let photoOutputConnection = output.connection(with: .video) {
             let deviceOrientation = UIDevice.current.orientation
             switch deviceOrientation {
@@ -204,7 +203,7 @@ class CameraModel: NSObject, ObservableObject {
             if !session.isRunning {
                 session.startRunning()
             }
-        } catch {
+            } catch {
             print("Failed to setup camera: \(error.localizedDescription)")
         }
     }
@@ -560,7 +559,7 @@ struct ContentView: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .frame(height: bannerHeight)
-            .background(Color.black.opacity(0.8))
+            .background(Color.blue.opacity(0.8))
     }
     
     // Add background color properties

@@ -4,9 +4,21 @@
 <dict>
 	<key>files</key>
 	<dict>
+		<key>AppIcon60x60@2x.png</key>
+		<data>
+		zg6omjzplucPU25PH98dc+oaixg=
+		</data>
+		<key>AppIcon76x76@2x~ipad.png</key>
+		<data>
+		o0pmxgUpYenvHi+SwO3FtOlCCB4=
+		</data>
+		<key>Assets.car</key>
+		<data>
+		Cl4YfomoCzdRoFoL9URvYYBckKs=
+		</data>
 		<key>EchoSnap.debug.dylib</key>
 		<data>
-		SySirc8NAQfRXCaW28YA7h5AUME=
+		mMJcqgiVNQ4QQG8CLPKZ7IXDQHw=
 		</data>
 		<key>EchoSnap.momd/EchoSnap.mom</key>
 		<data>
@@ -22,7 +34,7 @@
 		</data>
 		<key>Info.plist</key>
 		<data>
-		H1wrrAATJty+aQm7FOIw/vmTmO4=
+		RE8g+SC4CCty8PC6+nyMtmItpds=
 		</data>
 		<key>PkgInfo</key>
 		<data>
@@ -30,7 +42,7 @@
 		</data>
 		<key>__preview.dylib</key>
 		<data>
-		SXO3gUVfFafDAW2QXr3ez5mwqSE=
+		b61tIeI11ACCXA24WfOHXWqXWys=
 		</data>
 		<key>embedded.mobileprovision</key>
 		<data>
@@ -39,11 +51,32 @@
 	</dict>
 	<key>files2</key>
 	<dict>
+		<key>AppIcon60x60@2x.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			K74by3QaC5ipjYm4zMxVQQyMHfZwZyceQW5aFeDo/6o=
+			</data>
+		</dict>
+		<key>AppIcon76x76@2x~ipad.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			F1oKb9X4mJ7UHUYMGqobkWxZFAvICiG1ds9aH7uFa6Q=
+			</data>
+		</dict>
+		<key>Assets.car</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			0LPQsJmOwjOtYktJDYtMFeY763CnSJ47vB/cquzDWmc=
+			</data>
+		</dict>
 		<key>EchoSnap.debug.dylib</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			iYQdqeQ8Sr0Egcf7wShXV0RVoPJ34BZtEmDd/viR2BY=
+			0idA/MvmcbvZZCGtDWebssaXxtYEnxJ1FgWgtuxx9KA=
 			</data>
 		</dict>
 		<key>EchoSnap.momd/EchoSnap.mom</key>
@@ -71,7 +104,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			nKR44k/I+n+68HyMMEk7C3TMK/t25UyUuGBm8DzMJVo=
+			Xx4YYEgNY6njtS1YRa3GlkxRypr2cbu0PWwK/1jhozg=
 			</data>
 		</dict>
 		<key>embedded.mobileprovision</key>
