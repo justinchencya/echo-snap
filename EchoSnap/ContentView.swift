@@ -10,50 +10,71 @@ import CoreData
 import AVFoundation
 import UIKit
 
+extension Color {
+    static let appBackground = Color(UIColor.systemBackground)
+    static let appGradientStart = Color(hex: "4A90E2")
+    static let appGradientEnd = Color(hex: "357ABD")
+}
+
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (255, 0, 0, 0)
+        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue:  Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
+}
+
 struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
     let isLandscape: Bool
-    @Environment(\.colorScheme) private var colorScheme
     
-    class VideoPreviewView: UIView {
+    class PreviewView: UIView {
         override class var layerClass: AnyClass {
-            AVCaptureVideoPreviewLayer.self
+            return AVCaptureVideoPreviewLayer.self
         }
         
         var videoPreviewLayer: AVCaptureVideoPreviewLayer {
             return layer as! AVCaptureVideoPreviewLayer
         }
+        
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            videoPreviewLayer.frame = bounds
+        }
     }
     
-    func makeUIView(context: Context) -> VideoPreviewView {
-        let view = VideoPreviewView()
-        view.backgroundColor = colorScheme == .dark ? .black : .systemBackground
+    func makeUIView(context: Context) -> PreviewView {
+        let view = PreviewView()
+        view.backgroundColor = .black
         view.videoPreviewLayer.session = session
         view.videoPreviewLayer.videoGravity = .resizeAspect
-        
-        // Set orientation based on device orientation
-        if isLandscape {
-            let deviceOrientation = UIDevice.current.orientation
-            view.videoPreviewLayer.connection?.videoOrientation = deviceOrientation == .landscapeLeft ? .landscapeRight : .landscapeLeft
-        } else {
-            view.videoPreviewLayer.connection?.videoOrientation = .portrait
-        }
         
         return view
     }
     
-    func updateUIView(_ uiView: VideoPreviewView, context: Context) {
-        DispatchQueue.main.async {
-            uiView.backgroundColor = colorScheme == .dark ? .black : .systemBackground
-            uiView.videoPreviewLayer.frame = uiView.bounds
-            
-            // Update orientation based on device orientation
-            if isLandscape {
-                let deviceOrientation = UIDevice.current.orientation
-                uiView.videoPreviewLayer.connection?.videoOrientation = deviceOrientation == .landscapeLeft ? .landscapeRight : .landscapeLeft
-            } else {
-                uiView.videoPreviewLayer.connection?.videoOrientation = .portrait
-            }
+    func updateUIView(_ uiView: PreviewView, context: Context) {
+        if isLandscape {
+            uiView.videoPreviewLayer.connection?.videoOrientation = .landscapeRight
+        } else {
+            uiView.videoPreviewLayer.connection?.videoOrientation = .portrait
         }
     }
 }
@@ -407,6 +428,65 @@ extension View {
     }
 }
 
+// Camera preview container view
+private struct CameraPreviewContainer: View {
+    let geometry: GeometryProxy
+    let isLandscape: Bool
+    let session: AVCaptureSession
+    let controls: () -> AnyView
+    
+    var body: some View {
+        let maxWidth = geometry.size.width * 0.9  // 90% of container width
+        let maxHeight = geometry.size.height * 0.9  // 90% of container height
+        
+        ZStack {
+            // Card background
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.black.opacity(0.05))
+                .shadow(color: .black.opacity(0.2), radius: 8)
+                .frame(width: maxWidth, height: maxHeight)
+            
+            // Camera preview
+            CameraPreview(session: session, isLandscape: isLandscape)
+                .frame(width: maxWidth, height: maxHeight)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                )
+            
+            // Controls overlay
+            AnyView(controls())
+        }
+        .position(x: geometry.size.width/2, y: geometry.size.height/2)
+    }
+}
+
+// Captured photo view
+private struct CapturedPhotoView: View {
+    let image: UIImage
+    let cornerRadius: CGFloat
+    let photoActions: () -> AnyView
+    
+    var body: some View {
+        ZStack {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            
+            // Bottom-right buttons
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    AnyView(photoActions())
+                }
+            }
+        }
+    }
+}
+
 struct ContentView: View {
     @State private var showImagePicker = false
     @State private var referenceImage: UIImage?
@@ -420,6 +500,9 @@ struct ContentView: View {
     private let buttonPadding: CGFloat = 16  // Padding from edges
     private let closeButtonPadding: CGFloat = 16  // Padding for close button
     private let bannerHeight: CGFloat = 30  // Height for the title banner
+    private let cardPadding: CGFloat = 12
+    private let cardSpacing: CGFloat = 4
+    private let cardCornerRadius: CGFloat = 12
     
     private var isLandscape: Bool {
         // Only consider left and right landscape orientations
@@ -448,21 +531,27 @@ struct ContentView: View {
     private func photoActionButtons() -> some View {
         HStack(spacing: buttonSpacing) {
             Button(action: {
-                camera.discardPhotoAndReopen()
+                withAnimation(.spring()) {
+                    camera.discardPhotoAndReopen()
+                }
             }) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: buttonSize))
                     .foregroundColor(.red)
                     .background(Circle().fill(Color.white))
+                    .shadow(color: .black.opacity(0.2), radius: 4)
             }
             
             Button(action: {
-                camera.savePhotoAndReopen()
+                withAnimation(.spring()) {
+                    camera.savePhotoAndReopen()
+                }
             }) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: buttonSize))
                     .foregroundColor(.green)
                     .background(Circle().fill(Color.white))
+                    .shadow(color: .black.opacity(0.2), radius: 4)
             }
         }
         .padding([.bottom, .trailing], buttonPadding)
@@ -478,6 +567,7 @@ struct ContentView: View {
                     .font(.system(size: buttonSize))
                     .foregroundColor(.blue)
                     .background(Circle().fill(Color.white))
+                    .shadow(color: .black.opacity(0.2), radius: 4)
             }
             
             Button(action: {
@@ -487,6 +577,7 @@ struct ContentView: View {
                     .font(.system(size: buttonSize))
                     .foregroundColor(.green)
                     .background(Circle().fill(Color.white))
+                    .shadow(color: .black.opacity(0.2), radius: 4)
             }
         }
         .padding([.bottom, .trailing], buttonPadding)
@@ -498,68 +589,91 @@ struct ContentView: View {
         let maxHeight = geometry.size.height * 0.9  // 90% of container height
         
         return ZStack(alignment: .bottomTrailing) {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: maxWidth)
-                .frame(maxHeight: maxHeight)
-                .position(x: geometry.size.width/2, y: geometry.size.height/2)
+            ZStack {
+                // Card background
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.black.opacity(0.05))
+                    .shadow(color: .black.opacity(0.2), radius: 8)
+                    .frame(width: geometry.size.width * 0.9, height: geometry.size.height * 0.9)
+                    .position(x: geometry.size.width/2, y: geometry.size.height/2)
+                
+                // Photo
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: geometry.size.width * 0.9, height: geometry.size.height * 0.9)
+                    .position(x: geometry.size.width/2, y: geometry.size.height/2)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    .frame(width: geometry.size.width * 0.9, height: geometry.size.height * 0.9)
+                    .position(x: geometry.size.width/2, y: geometry.size.height/2)
+            )
             
+            // Action buttons - now positioned at bottom-right
             photoActionButtons()
+                .frame(width: geometry.size.width * 0.9, height: geometry.size.height * 0.9)
+                .position(x: geometry.size.width/2, y: geometry.size.height/2)
         }
     }
     
     // Helper view for the camera preview controls
     private func cameraPreviewControls() -> some View {
-        GeometryReader { geometry in
-            VStack {
-                // Close button at top-right
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        camera.togglePreview()
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: buttonSize))
-                            .foregroundColor(.white)
-                            .background(Circle().fill(Color.black.opacity(0.5)))
-                    }
-                    .padding([.top, .trailing], closeButtonPadding)
-                }
-                
+        VStack {
+            // Close button at top-right
+            HStack {
                 Spacer()
-                
-                // Capture button centered at bottom
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        camera.capturePhoto()
-                    }) {
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: captureButtonSize, height: captureButtonSize)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.black.opacity(0.8), lineWidth: 2)
-                                    .frame(width: captureButtonSize - 10, height: captureButtonSize - 10)
-                            )
+                Button(action: {
+                    withAnimation(.spring()) {
+                        camera.togglePreview()
                     }
-                    Spacer()
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: buttonSize))
+                        .foregroundColor(.white)
+                        .background(Circle().fill(Color.black.opacity(0.5)))
+                        .shadow(color: .black.opacity(0.2), radius: 4)
                 }
-                .padding(.bottom, 20)
+                .padding(closeButtonPadding)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            Spacer()
+            
+            // Capture button centered at bottom
+            Button(action: {
+                camera.capturePhoto()
+            }) {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: captureButtonSize, height: captureButtonSize)
+                    .shadow(color: .black.opacity(0.3), radius: 5)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.black.opacity(0.2), lineWidth: 2)
+                            .padding(4)
+                    )
+            }
+            .padding(.bottom, buttonPadding)
         }
     }
     
     // Add title banner view
     private func titleBanner() -> some View {
-        Text("EchoSnap")
-            .font(.system(size: 16, weight: .medium))
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: bannerHeight)
-            .background(Color.blue.opacity(0.8))
+        ZStack {
+            LinearGradient(
+                gradient: Gradient(colors: [.appGradientStart, .appGradientEnd]),
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            
+            Text("EchoSnap")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.white)
+        }
+        .frame(height: bannerHeight)
+        .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
     }
     
     // Add background color properties
@@ -569,183 +683,240 @@ struct ContentView: View {
         colorScheme == .dark ? Color.black : Color(UIColor.systemBackground)
     }
     
+    // Add a new view for the enhanced placeholder:
+    private struct EnhancedPlaceholder: View {
+        let action: () -> Void
+        
+        var body: some View {
+            Button(action: action) {
+                VStack(spacing: 16) {
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 80, height: 80)
+                        .foregroundColor(.appGradientStart)
+                    
+                    Text("Tap to Select Reference Image")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.appGradientStart)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.appGradientStart.opacity(0.3), lineWidth: 2)
+                        .background(Color.appGradientStart.opacity(0.05))
+                        .cornerRadius(12)
+                )
+                .padding(20)
+            }
+        }
+    }
+    
+    // Add enhanced camera placeholder
+    private struct EnhancedCameraPlaceholder: View {
+        let action: () -> Void
+        @State private var isHovered = false
+        
+        var body: some View {
+            Button(action: action) {
+                VStack(spacing: 16) {
+                    Image(systemName: "camera.circle.fill")
+                        .resizable()
+                        .frame(width: 80, height: 80)
+                        .foregroundColor(.appGradientStart)
+                        .scaleEffect(isHovered ? 1.1 : 1.0)
+                    
+                    Text("Tap to Open Camera")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.appGradientStart)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.appGradientStart.opacity(0.3), lineWidth: 2)
+                        .background(Color.appGradientStart.opacity(0.05))
+                        .cornerRadius(12)
+                )
+                .padding(20)
+            }
+            .onHover { hovering in
+                withAnimation(.spring()) {
+                    isHovered = hovering
+                }
+            }
+        }
+    }
+    
+    // Helper function for consistent card styling
+    private func cardBackground() -> some View {
+        RoundedRectangle(cornerRadius: cardCornerRadius)
+            .fill(Color.black.opacity(0.05))
+            .shadow(color: .black.opacity(0.1), radius: 8)
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             titleBanner()
             
-            Group {
+            GeometryReader { geometry in
                 if isLandscape {
                     // Landscape layout
-                    HStack(spacing: 0) {
+                    HStack(spacing: cardSpacing) {
                         // Left half: Reference Image
                         ZStack {
-                            sectionBackground
+                            cardBackground()
                             
                             if let referenceImage = referenceImage {
-                                ZStack(alignment: .bottomTrailing) {
+                                ZStack {
                                     ZoomableImageView(image: referenceImage, shouldReset: $shouldResetImage, isLandscape: true)
+                                        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
+                                    
+                                    // Bottom-right buttons
+                                    VStack {
+                                        Spacer()
+                                        HStack {
+                                            Spacer()
+                                            referenceImageButtons()
+                                        }
+                                    }
                                     
                                     // Top-right close button
                                     VStack {
                                         HStack {
                                             Spacer()
                                             Button(action: {
-                                                self.referenceImage = nil
+                                                withAnimation(.spring()) {
+                                                    self.referenceImage = nil
+                                                }
                                             }) {
                                                 Image(systemName: "xmark.circle.fill")
                                                     .font(.system(size: buttonSize))
                                                     .foregroundColor(.white)
                                                     .background(Circle().fill(Color.black.opacity(0.5)))
+                                                    .shadow(color: .black.opacity(0.2), radius: 4)
                                             }
-                                            .padding([.top, .trailing], closeButtonPadding)
+                                            .padding(closeButtonPadding)
                                         }
                                         Spacer()
                                     }
-                                    
-                                    // Bottom-right control buttons
-                                    referenceImageButtons()
                                 }
                             } else {
-                                Button(action: {
-                                    showImagePicker = true
-                                }) {
-                                    Image(systemName: "photo.on.rectangle.angled")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 80, height: 80)
-                                        .foregroundColor(.blue)
-                                }
+                                EnhancedPlaceholder(action: { showImagePicker = true })
                             }
                         }
-                        .frame(maxWidth: .infinity)
-                        .clipped()
+                        .frame(width: (geometry.size.width - cardSpacing - cardPadding * 2 - 32) / 2)  // Account for both left and right margins
                         
                         // Right half: Camera
                         ZStack {
-                            sectionBackground
+                            cardBackground()
                             
                             if !camera.isPreviewActive {
-                                Button(action: {
-                                    camera.togglePreview()
-                                }) {
-                                    Image(systemName: "camera.circle.fill")
-                                        .resizable()
-                                        .frame(width: 60, height: 60)
-                                        .foregroundColor(.blue)
-                                }
+                                EnhancedCameraPlaceholder(action: { camera.togglePreview() })
                             } else if let capturedImage = camera.recentImage, camera.isPhotoTaken {
-                                GeometryReader { geometry in
-                                    capturedPhotoView(image: capturedImage, in: geometry)
-                                }
+                                CapturedPhotoView(
+                                    image: capturedImage,
+                                    cornerRadius: cardCornerRadius,
+                                    photoActions: { AnyView(photoActionButtons()) }
+                                )
                             } else {
-                                GeometryReader { geometry in
-                                    let availableHeight = geometry.size.height * 0.9  // 90% of container height
-                                    let availableWidth = geometry.size.width * 0.9  // 90% of container width
-                                    let height = availableHeight
-                                    let width = min(height * 4/3, availableWidth)
-                                    
-                                    ZStack {
-                                        CameraPreview(session: camera.session, isLandscape: isLandscape)
-                                            .frame(width: width, height: height)
-                                            .clipped()
-                                            .position(x: geometry.size.width/2, y: geometry.size.height/2)
-                                        
-                                        cameraPreviewControls()
-                                    }
+                                GeometryReader { geo in
+                                    CameraPreviewContainer(
+                                        geometry: geo,
+                                        isLandscape: isLandscape,
+                                        session: camera.session,
+                                        controls: { AnyView(cameraPreviewControls()) }
+                                    )
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 }
                             }
                         }
-                        .frame(maxWidth: .infinity)
+                        .frame(width: (geometry.size.width - cardSpacing - cardPadding * 2 - 32) / 2)  // Account for both left and right margins
                     }
+                    .padding(.horizontal, cardPadding)
+                    .padding(.top, cardPadding)
+                    .padding(.bottom, 16)  // Add bottom padding
+                    .padding(.leading, 16) // Notch protection
+                    .padding(.trailing, 16) // Right margin
                 } else {
-                    // Original vertical layout
-                    VStack(spacing: 0) {
-                        // Top half: Reference Image or Icon Button
+                    // Portrait layout
+                    VStack(spacing: cardSpacing) {
+                        // Top half: Reference Image
                         ZStack {
-                            sectionBackground
+                            cardBackground()
                             
                             if let referenceImage = referenceImage {
-                                ZStack(alignment: .bottomTrailing) {
+                                ZStack {
                                     ZoomableImageView(image: referenceImage, shouldReset: $shouldResetImage, isLandscape: false)
+                                        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
+                                    
+                                    // Bottom-right buttons
+                                    VStack {
+                                        Spacer()
+                                        HStack {
+                                            Spacer()
+                                            referenceImageButtons()
+                                        }
+                                    }
                                     
                                     // Top-right close button
                                     VStack {
                                         HStack {
                                             Spacer()
                                             Button(action: {
-                                                self.referenceImage = nil
+                                                withAnimation(.spring()) {
+                                                    self.referenceImage = nil
+                                                }
                                             }) {
                                                 Image(systemName: "xmark.circle.fill")
                                                     .font(.system(size: buttonSize))
                                                     .foregroundColor(.white)
                                                     .background(Circle().fill(Color.black.opacity(0.5)))
+                                                    .shadow(color: .black.opacity(0.2), radius: 4)
                                             }
-                                            .padding([.top, .trailing], closeButtonPadding)
+                                            .padding(closeButtonPadding)
                                         }
                                         Spacer()
                                     }
-                                    
-                                    // Bottom-right control buttons
-                                    referenceImageButtons()
                                 }
                             } else {
-                                Button(action: {
-                                    showImagePicker = true
-                                }) {
-                                    Image(systemName: "photo.on.rectangle.angled")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 80, height: 80)
-                                        .foregroundColor(.blue)
-                                }
+                                EnhancedPlaceholder(action: { showImagePicker = true })
                             }
                         }
-                        .frame(maxHeight: .infinity)
-                        .clipped()
+                        .frame(height: (geometry.size.height - cardSpacing - cardPadding * 2 - 16) / 2)
                         
-                        // Bottom half: Camera Preview/Photo with Buttons
+                        // Bottom half: Camera
                         ZStack {
-                            sectionBackground
+                            cardBackground()
                             
                             if !camera.isPreviewActive {
-                                // Show camera icon when preview is off
-                                Button(action: {
-                                    camera.togglePreview()
-                                }) {
-                                    Image(systemName: "camera.circle.fill")
-                                        .resizable()
-                                        .frame(width: 60, height: 60)
-                                        .foregroundColor(.blue)
-                                }
+                                EnhancedCameraPlaceholder(action: { camera.togglePreview() })
                             } else if let capturedImage = camera.recentImage, camera.isPhotoTaken {
-                                GeometryReader { geometry in
-                                    capturedPhotoView(image: capturedImage, in: geometry)
-                                }
+                                CapturedPhotoView(
+                                    image: capturedImage,
+                                    cornerRadius: cardCornerRadius,
+                                    photoActions: { AnyView(photoActionButtons()) }
+                                )
                             } else {
-                                // Show camera preview with correct aspect ratio
-                                GeometryReader { geometry in
-                                    let availableWidth = geometry.size.width * 0.9  // 90% of container width
-                                    let availableHeight = geometry.size.height * 0.9  // 90% of container height
-                                    let width = availableWidth
-                                    let height = min(width * 4/3, availableHeight)
-                                    
-                                    ZStack {
-                                        CameraPreview(session: camera.session, isLandscape: isLandscape)
-                                            .frame(width: width, height: height)
-                                            .clipped()
-                                            .position(x: geometry.size.width/2, y: geometry.size.height/2)
-                                        
-                                        cameraPreviewControls()
-                                    }
+                                GeometryReader { geo in
+                                    CameraPreviewContainer(
+                                        geometry: geo,
+                                        isLandscape: isLandscape,
+                                        session: camera.session,
+                                        controls: { AnyView(cameraPreviewControls()) }
+                                    )
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 }
                             }
                         }
-                        .frame(maxHeight: .infinity)
+                        .frame(height: (geometry.size.height - cardSpacing - cardPadding * 2 - 16) / 2)
                     }
+                    .padding(.horizontal, cardPadding)
+                    .padding(.top, cardPadding)
+                    .padding(.bottom, 16)
                 }
             }
         }
-        .ignoresSafeArea(edges: [.horizontal, .bottom])  // Fix safe area edges
+        .ignoresSafeArea(edges: [.horizontal, .bottom])
         .sheet(isPresented: $showImagePicker) {
             ImagePicker(selectedImage: $referenceImage)
         }

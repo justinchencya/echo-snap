@@ -4,18 +4,26 @@
     "Localizable": [
       {
         "comment": "",
-        "key": "Select Reference Image",
+        "key": "EchoSnap",
         "location": {
-          "startingColumn": 55,
-          "startingLine": 165
+          "startingColumn": 18,
+          "startingLine": 634
         }
       },
       {
         "comment": "",
-        "key": "Change Reference Image",
+        "key": "Tap to Select Reference Image",
         "location": {
-          "startingColumn": 82,
-          "startingLine": 165
+          "startingColumn": 26,
+          "startingLine": 662
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tap to Open Camera",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 692
         }
       }
     ]

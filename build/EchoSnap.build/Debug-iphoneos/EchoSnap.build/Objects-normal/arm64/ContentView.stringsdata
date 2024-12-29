@@ -6,8 +6,24 @@
         "comment": "",
         "key": "EchoSnap",
         "location": {
-          "startingColumn": 14,
-          "startingLine": 557
+          "startingColumn": 18,
+          "startingLine": 671
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tap to Select Reference Image",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 699
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tap to Open Camera",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 729
         }
       }
     ]

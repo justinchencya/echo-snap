@@ -4,9 +4,21 @@
 <dict>
 	<key>files</key>
 	<dict>
+		<key>AppIcon60x60@2x.png</key>
+		<data>
+		RICZMWzkYkDjlFG7jy9zd92fn+o=
+		</data>
+		<key>AppIcon76x76@2x~ipad.png</key>
+		<data>
+		2vTH5VhwAq4rSzn14TTRBATz8K4=
+		</data>
+		<key>Assets.car</key>
+		<data>
+		cLjsvGmd+Ef9FKlkhZJ8hyQ6vL8=
+		</data>
 		<key>EchoSnap.debug.dylib</key>
 		<data>
-		F6fch25m3g23YUoFukCP0n11pC0=
+		IjxK066mku6+dyMXZQNd4Et4tm0=
 		</data>
 		<key>EchoSnap.momd/EchoSnap.mom</key>
 		<data>
@@ -22,7 +34,7 @@
 		</data>
 		<key>Info.plist</key>
 		<data>
-		L0uIvmzlKWgZ7+CPCU5goC3aJQk=
+		iADdnhOFGSdvMpeA+Qm2sBams3Q=
 		</data>
 		<key>PkgInfo</key>
 		<data>
@@ -35,11 +47,32 @@
 	</dict>
 	<key>files2</key>
 	<dict>
+		<key>AppIcon60x60@2x.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			IOzjzZ1ow3JXToNGFegWYfxogSximlt4kR6sop+Rsno=
+			</data>
+		</dict>
+		<key>AppIcon76x76@2x~ipad.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			owUBIViJCfRVneBUN4zX+sx6xWpxsgWNbiTYmcaB6fU=
+			</data>
+		</dict>
+		<key>Assets.car</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			s+I/6XPUf0nBK+m/XohxFcadRDbe5ESy6eEGfQpV8EY=
+			</data>
+		</dict>
 		<key>EchoSnap.debug.dylib</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			yUbSPnrJ7VyC1v18ML1I82QnABfV4oeQ0iIxJD6m4u0=
+			b65m1NOQpJfe4e5KYJUvEVMwfcFzmbZRj/bjaufgpyU=
 			</data>
 		</dict>
 		<key>EchoSnap.momd/EchoSnap.mom</key>

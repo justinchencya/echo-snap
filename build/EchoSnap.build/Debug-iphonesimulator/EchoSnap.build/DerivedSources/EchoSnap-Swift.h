@@ -280,7 +280,9 @@ typedef unsigned int swift_uint4  __attribute__((__ext_vector_type__(4)));
 #if __has_warning("-Watimport-in-framework-header")
 #pragma clang diagnostic ignored "-Watimport-in-framework-header"
 #endif
+@import AVFoundation;
 @import CoreData;
+@import ObjectiveC;
 #endif
 
 #endif
@@ -302,6 +304,21 @@ typedef unsigned int swift_uint4  __attribute__((__ext_vector_type__(4)));
 #endif
 
 #if defined(__OBJC__)
+
+SWIFT_CLASS("_TtC8EchoSnap11CameraModel")
+@interface CameraModel : NSObject
+- (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
+@end
+
+@class AVCapturePhotoOutput;
+@class AVCapturePhoto;
+@class UIImage;
+
+@interface CameraModel (SWIFT_EXTENSION(EchoSnap)) <AVCapturePhotoCaptureDelegate>
+- (void)captureOutput:(AVCapturePhotoOutput * _Nonnull)output didFinishProcessingPhoto:(AVCapturePhoto * _Nonnull)photo error:(NSError * _Nullable)error;
+- (void)image:(UIImage * _Nonnull)image didFinishSavingWithError:(NSError * _Nullable)error contextInfo:(void const * _Nonnull)contextInfo;
+@end
+
 @class NSEntityDescription;
 @class NSManagedObjectContext;
 
