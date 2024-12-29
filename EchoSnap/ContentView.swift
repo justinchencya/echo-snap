@@ -11,7 +11,6 @@ import AVFoundation
 import UIKit
 
 extension Color {
-    static let appBackground = Color(UIColor.systemBackground)
     static let appGradientStart = Color(hex: "4A90E2")
     static let appGradientEnd = Color(hex: "357ABD")
 }
@@ -436,20 +435,19 @@ private struct CameraPreviewContainer: View {
     let controls: () -> AnyView
     
     var body: some View {
-        let maxWidth = geometry.size.width * 0.9  // 90% of container width
-        let maxHeight = geometry.size.height * 0.9  // 90% of container height
+        let maxWidth = geometry.size.width * 0.9
+        let maxHeight = geometry.size.height * 0.9
         
         ZStack {
-            // Card background
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.05))
-                .shadow(color: .black.opacity(0.2), radius: 8)
-                .frame(width: maxWidth, height: maxHeight)
-            
             // Camera preview
             CameraPreview(session: session, isLandscape: isLandscape)
                 .frame(width: maxWidth, height: maxHeight)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.black.opacity(0.05))
+                        .shadow(color: .black.opacity(0.2), radius: 8)
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(Color.white.opacity(0.2), lineWidth: 1)
@@ -457,6 +455,7 @@ private struct CameraPreviewContainer: View {
             
             // Controls overlay
             AnyView(controls())
+                .frame(width: maxWidth, height: maxHeight)
         }
         .position(x: geometry.size.width/2, y: geometry.size.height/2)
     }
@@ -583,42 +582,6 @@ struct ContentView: View {
         .padding([.bottom, .trailing], buttonPadding)
     }
     
-    // Helper view for the captured photo with buttons
-    private func capturedPhotoView(image: UIImage, in geometry: GeometryProxy) -> some View {
-        let maxWidth = geometry.size.width * 0.9  // 90% of container width
-        let maxHeight = geometry.size.height * 0.9  // 90% of container height
-        
-        return ZStack(alignment: .bottomTrailing) {
-            ZStack {
-                // Card background
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.black.opacity(0.05))
-                    .shadow(color: .black.opacity(0.2), radius: 8)
-                    .frame(width: geometry.size.width * 0.9, height: geometry.size.height * 0.9)
-                    .position(x: geometry.size.width/2, y: geometry.size.height/2)
-                
-                // Photo
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: geometry.size.width * 0.9, height: geometry.size.height * 0.9)
-                    .position(x: geometry.size.width/2, y: geometry.size.height/2)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    .frame(width: geometry.size.width * 0.9, height: geometry.size.height * 0.9)
-                    .position(x: geometry.size.width/2, y: geometry.size.height/2)
-            )
-            
-            // Action buttons - now positioned at bottom-right
-            photoActionButtons()
-                .frame(width: geometry.size.width * 0.9, height: geometry.size.height * 0.9)
-                .position(x: geometry.size.width/2, y: geometry.size.height/2)
-        }
-    }
-    
     // Helper view for the camera preview controls
     private func cameraPreviewControls() -> some View {
         VStack {
@@ -676,13 +639,6 @@ struct ContentView: View {
         .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
     }
     
-    // Add background color properties
-    @Environment(\.colorScheme) private var colorScheme
-    
-    private var sectionBackground: Color {
-        colorScheme == .dark ? Color.black : Color(UIColor.systemBackground)
-    }
-    
     // Add a new view for the enhanced placeholder:
     private struct EnhancedPlaceholder: View {
         let action: () -> Void
@@ -712,10 +668,9 @@ struct ContentView: View {
         }
     }
     
-    // Add enhanced camera placeholder
+    // Simplify EnhancedCameraPlaceholder
     private struct EnhancedCameraPlaceholder: View {
         let action: () -> Void
-        @State private var isHovered = false
         
         var body: some View {
             Button(action: action) {
@@ -724,7 +679,6 @@ struct ContentView: View {
                         .resizable()
                         .frame(width: 80, height: 80)
                         .foregroundColor(.appGradientStart)
-                        .scaleEffect(isHovered ? 1.1 : 1.0)
                     
                     Text("Tap to Open Camera")
                         .font(.system(size: 16, weight: .medium))
@@ -738,11 +692,6 @@ struct ContentView: View {
                         .cornerRadius(12)
                 )
                 .padding(20)
-            }
-            .onHover { hovering in
-                withAnimation(.spring()) {
-                    isHovered = hovering
-                }
             }
         }
     }
