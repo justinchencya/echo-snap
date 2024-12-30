@@ -456,12 +456,12 @@ private struct CameraPreviewContainer: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.black.opacity(0.05))
-                        .shadow(color: .black.opacity(0.2), radius: 8)
+                        .fill(Color(.systemBackground))
+                        .shadow(color: .black.opacity(0.05), radius: 4)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        .stroke(Color.appGradientStart.opacity(0.1), lineWidth: 1)
                 )
             
             // Controls overlay
@@ -794,9 +794,11 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.appGradientStart.opacity(0.3), lineWidth: 2)
-                        .background(Color.appGradientStart.opacity(0.05))
-                        .cornerRadius(12)
+                        .fill(Color(.systemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.appGradientStart.opacity(0.3), lineWidth: 2)
+                        )
                 )
                 .padding(20)
             }
@@ -822,9 +824,11 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.appGradientStart.opacity(0.3), lineWidth: 2)
-                        .background(Color.appGradientStart.opacity(0.05))
-                        .cornerRadius(12)
+                        .fill(Color(.systemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.appGradientStart.opacity(0.3), lineWidth: 2)
+                        )
                 )
                 .padding(20)
             }
@@ -834,8 +838,12 @@ struct ContentView: View {
     // Helper function for consistent card styling
     private func cardBackground() -> some View {
         RoundedRectangle(cornerRadius: cardCornerRadius)
-            .fill(Color.black.opacity(0.05))
-            .shadow(color: .black.opacity(0.1), radius: 8)
+            .fill(Color(.systemBackground))
+            .overlay(
+                RoundedRectangle(cornerRadius: cardCornerRadius)
+                    .stroke(Color.appGradientStart.opacity(0.1), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.05), radius: 4)
     }
     
     var body: some View {
