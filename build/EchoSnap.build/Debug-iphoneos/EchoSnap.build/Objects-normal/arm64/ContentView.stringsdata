@@ -7,7 +7,7 @@
         "key": "EchoSnap",
         "location": {
           "startingColumn": 18,
-          "startingLine": 634
+          "startingLine": 670
         }
       },
       {
@@ -15,7 +15,7 @@
         "key": "Tap to Select Reference Image",
         "location": {
           "startingColumn": 26,
-          "startingLine": 655
+          "startingLine": 691
         }
       },
       {
@@ -23,7 +23,7 @@
         "key": "Tap to Open Camera",
         "location": {
           "startingColumn": 26,
-          "startingLine": 683
+          "startingLine": 719
         }
       }
     ]

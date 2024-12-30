@@ -43,7 +43,7 @@ extension Color {
 
 struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
-    let isLandscape: Bool
+    let videoOrientation: AVCaptureVideoOrientation
     
     class PreviewView: UIView {
         override class var layerClass: AnyClass {
@@ -65,16 +65,13 @@ struct CameraPreview: UIViewRepresentable {
         view.backgroundColor = .black
         view.videoPreviewLayer.session = session
         view.videoPreviewLayer.videoGravity = .resizeAspect
+        view.videoPreviewLayer.connection?.videoOrientation = videoOrientation
         
         return view
     }
     
     func updateUIView(_ uiView: PreviewView, context: Context) {
-        if isLandscape {
-            uiView.videoPreviewLayer.connection?.videoOrientation = .landscapeRight
-        } else {
-            uiView.videoPreviewLayer.connection?.videoOrientation = .portrait
-        }
+        uiView.videoPreviewLayer.connection?.videoOrientation = videoOrientation
     }
 }
 
@@ -108,18 +105,31 @@ class CameraModel: NSObject, ObservableObject {
     
     func capturePhoto() {
         let settings = AVCapturePhotoSettings()
+        let previewPixelType = settings.availablePreviewPhotoPixelFormatTypes.first!
+        let previewFormat = [
+            kCVPixelBufferPixelFormatTypeKey as String: previewPixelType,
+            kCVPixelBufferWidthKey as String: 160,
+            kCVPixelBufferHeightKey as String: 160
+        ]
+        settings.previewPhotoFormat = previewFormat
         
-        if let photoOutputConnection = output.connection(with: .video) {
-            let deviceOrientation = UIDevice.current.orientation
-            switch deviceOrientation {
-            case .landscapeLeft:
-                photoOutputConnection.videoOrientation = .landscapeRight
-            case .landscapeRight:
-                photoOutputConnection.videoOrientation = .landscapeLeft
-            case .portraitUpsideDown:
-                photoOutputConnection.videoOrientation = .portraitUpsideDown
-            default:
-                photoOutputConnection.videoOrientation = .portrait
+        // Get the video orientation from the interface orientation
+        if let connection = output.connection(with: .video) {
+            if let interfaceOrientation = UIWindow.key?.windowScene?.interfaceOrientation {
+                let videoOrientation: AVCaptureVideoOrientation
+                switch interfaceOrientation {
+                case .portrait:
+                    videoOrientation = .portrait
+                case .portraitUpsideDown:
+                    videoOrientation = .portraitUpsideDown
+                case .landscapeLeft:
+                    videoOrientation = .landscapeLeft
+                case .landscapeRight:
+                    videoOrientation = .landscapeRight
+                default:
+                    videoOrientation = .portrait
+                }
+                connection.videoOrientation = videoOrientation
             }
         }
         
@@ -432,6 +442,7 @@ private struct CameraPreviewContainer: View {
     let geometry: GeometryProxy
     let isLandscape: Bool
     let session: AVCaptureSession
+    let videoOrientation: AVCaptureVideoOrientation
     let controls: () -> AnyView
     
     var body: some View {
@@ -440,7 +451,7 @@ private struct CameraPreviewContainer: View {
         
         ZStack {
             // Camera preview
-            CameraPreview(session: session, isLandscape: isLandscape)
+            CameraPreview(session: session, videoOrientation: videoOrientation)
                 .frame(width: maxWidth, height: maxHeight)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .background(
@@ -504,24 +515,49 @@ struct ContentView: View {
     private let cardCornerRadius: CGFloat = 12
     
     private var isLandscape: Bool {
-        // Only consider left and right landscape orientations
-        orientation == .landscapeLeft || orientation == .landscapeRight
+        // Get the interface orientation instead of device orientation
+        let interfaceOrientation = UIWindow.key?.windowScene?.interfaceOrientation ?? .portrait
+        return interfaceOrientation.isLandscape
+    }
+    
+    private var videoOrientation: AVCaptureVideoOrientation {
+        // Get the interface orientation instead of device orientation
+        let interfaceOrientation = UIWindow.key?.windowScene?.interfaceOrientation ?? .portrait
+        
+        switch interfaceOrientation {
+        case .portrait:
+            return .portrait
+        case .portraitUpsideDown:
+            return .portraitUpsideDown
+        case .landscapeLeft:
+            return .landscapeLeft
+        case .landscapeRight:
+            return .landscapeRight
+        default:
+            return .portrait
+        }
     }
     
     private func handleOrientationChange(_ newOrientation: UIDeviceOrientation) {
-        // Only handle actual orientation changes and ignore face up/down
-        if orientation != newOrientation && !newOrientation.isFlat {
-            orientation = newOrientation
-            
-            // Only handle camera preview if it's active and no photo is taken
-            if camera.isPreviewActive && !camera.isPhotoTaken {
-                camera.isPreviewActive = false
-                camera.session.stopRunning()
+        // Only handle actual orientation changes that match interface orientations
+        if orientation != newOrientation {
+            switch newOrientation {
+            case .portrait, .landscapeLeft, .landscapeRight:
+                orientation = newOrientation
                 
-                // Reopen camera preview after a short delay
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    camera.togglePreview()
+                // Only handle camera preview if it's active and no photo is taken
+                if camera.isPreviewActive && !camera.isPhotoTaken {
+                    camera.isPreviewActive = false
+                    camera.session.stopRunning()
+                    
+                    // Reopen camera preview after a short delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        camera.togglePreview()
+                    }
                 }
+            default:
+                // Ignore other orientations (face up, face down, portrait upside down)
+                break
             }
         }
     }
@@ -773,6 +809,7 @@ struct ContentView: View {
                                         geometry: geo,
                                         isLandscape: isLandscape,
                                         session: camera.session,
+                                        videoOrientation: videoOrientation,
                                         controls: { AnyView(cameraPreviewControls()) }
                                     )
                                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -851,6 +888,7 @@ struct ContentView: View {
                                         geometry: geo,
                                         isLandscape: isLandscape,
                                         session: camera.session,
+                                        videoOrientation: videoOrientation,
                                         controls: { AnyView(cameraPreviewControls()) }
                                     )
                                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -877,4 +915,11 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+}
+
+extension UIWindow {
+    static var key: UIWindow? {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return nil }
+        return scene.windows.first(where: { $0.isKeyWindow })
+    }
 }
