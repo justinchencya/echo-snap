@@ -497,12 +497,105 @@ private struct CapturedPhotoView: View {
     }
 }
 
+// Add InfoView struct before ContentView
+private struct InfoView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    private var appIcon: UIImage? {
+        if let iconsDictionary = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
+           let primaryIconsDictionary = iconsDictionary["CFBundlePrimaryIcon"] as? [String: Any],
+           let iconFiles = primaryIconsDictionary["CFBundleIconFiles"] as? [String],
+           let lastIcon = iconFiles.last {
+            return UIImage(named: lastIcon)
+        }
+        return nil
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 24) {
+                if let icon = appIcon {
+                    Image(uiImage: icon)
+                        .resizable()
+                        .frame(width: 80, height: 80)
+                        .cornerRadius(16)
+                } else {
+                    // Fallback to app name if icon is not found
+                    Text("ES")
+                        .font(.system(size: 40, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 80, height: 80)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.appGradientStart)
+                        )
+                }
+                
+                VStack(spacing: 16) {
+                    Text("EchoSnap")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.appGradientStart)
+                    
+                    Text("© 2024 nerdyStuff")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                
+                VStack(spacing: 12) {
+                    Link(destination: URL(string: "https://www.nerdystuff.xyz")!) {
+                        HStack {
+                            Text("About Us")
+                            Spacer()
+                            Image(systemName: "arrow.up.right.circle.fill")
+                        }
+                        .foregroundColor(.appGradientStart)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.appGradientStart.opacity(0.1))
+                        )
+                    }
+                    
+                    Link(destination: URL(string: "https://www.nerdystuff.xyz/pages/contact-us")!) {
+                        HStack {
+                            Text("Contact")
+                            Spacer()
+                            Image(systemName: "arrow.up.right.circle.fill")
+                        }
+                        .foregroundColor(.appGradientStart)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.appGradientStart.opacity(0.1))
+                        )
+                    }
+                }
+                .padding(.horizontal)
+                
+                Spacer()
+            }
+            .padding(.top, 40)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+    }
+}
+
 struct ContentView: View {
     @State private var showImagePicker = false
     @State private var referenceImage: UIImage?
     @State private var shouldResetImage = false
     @StateObject private var camera = CameraModel()
     @State private var orientation = UIDevice.current.orientation
+    @State private var showInfoView = false
     
     private let buttonSize: CGFloat = 24
     private let captureButtonSize: CGFloat = 60
@@ -661,18 +754,24 @@ struct ContentView: View {
     // Add title banner view
     private func titleBanner() -> some View {
         ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [.appGradientStart, .appGradientEnd]),
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-            
+            // Title centered in the entire space
             Text("EchoSnap")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundColor(.appGradientStart)
+                .frame(maxWidth: .infinity)
+            
+            // Info button aligned to the trailing edge
+            HStack {
+                Spacer()
+                Button(action: { showInfoView = true }) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: buttonSize))
+                        .foregroundColor(.appGradientStart)
+                }
+            }
+            .padding(.trailing, cardPadding)  // Match exactly with card padding
         }
         .frame(height: bannerHeight)
-        .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
     }
     
     // Add a new view for the enhanced placeholder:
@@ -906,6 +1005,9 @@ struct ContentView: View {
         .ignoresSafeArea(edges: [.horizontal, .bottom])
         .sheet(isPresented: $showImagePicker) {
             ImagePicker(selectedImage: $referenceImage)
+        }
+        .sheet(isPresented: $showInfoView) {
+            InfoView()
         }
         .onRotate { newOrientation in
             handleOrientationChange(newOrientation)

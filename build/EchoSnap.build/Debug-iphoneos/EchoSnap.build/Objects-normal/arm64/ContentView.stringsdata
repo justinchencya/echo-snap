@@ -4,10 +4,50 @@
     "Localizable": [
       {
         "comment": "",
+        "key": "ES",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 524
+        }
+      },
+      {
+        "comment": "",
+        "key": "EchoSnap",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 535
+        }
+      },
+      {
+        "comment": "",
+        "key": "© 2024 nerdyStuff",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 539
+        }
+      },
+      {
+        "comment": "",
+        "key": "About Us",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 547
+        }
+      },
+      {
+        "comment": "",
+        "key": "Contact",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 561
+        }
+      },
+      {
+        "comment": "",
         "key": "EchoSnap",
         "location": {
           "startingColumn": 18,
-          "startingLine": 670
+          "startingLine": 758
         }
       },
       {
@@ -15,7 +55,7 @@
         "key": "Tap to Select Reference Image",
         "location": {
           "startingColumn": 26,
-          "startingLine": 691
+          "startingLine": 790
         }
       },
       {
@@ -23,7 +63,7 @@
         "key": "Tap to Open Camera",
         "location": {
           "startingColumn": 26,
-          "startingLine": 719
+          "startingLine": 818
         }
       }
     ]
