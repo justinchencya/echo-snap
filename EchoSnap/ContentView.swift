@@ -80,6 +80,7 @@ class CameraModel: NSObject, ObservableObject {
     @Published var recentImage: UIImage?
     @Published var isPhotoTaken = false
     @Published var isPreviewActive = false
+    @Published var photoCount: Int = UserDefaults.standard.integer(forKey: "photoCount")
     private var isCameraAuthorized = false
     private let output = AVCapturePhotoOutput()
     
@@ -159,10 +160,9 @@ class CameraModel: NSObject, ObservableObject {
     
     func savePhotoAndReopen() {
         if let image = recentImage {
-            // Save to camera roll
             UIImageWriteToSavedPhotosAlbum(image, self, #selector(self.image(_:didFinishSavingWithError:contextInfo:)), nil)
+            incrementPhotoCount()
         }
-        // Clear and reopen camera
         recentImage = nil
         isPhotoTaken = false
         if !session.isRunning {
@@ -181,6 +181,16 @@ class CameraModel: NSObject, ObservableObject {
                 self.session.startRunning()
             }
         }
+    }
+    
+    func incrementPhotoCount() {
+        photoCount += 1
+        UserDefaults.standard.set(photoCount, forKey: "photoCount")
+    }
+    
+    func resetPhotoCount() {
+        photoCount = 0
+        UserDefaults.standard.set(photoCount, forKey: "photoCount")
     }
     
     private func checkPermissions() {
@@ -500,6 +510,7 @@ private struct CapturedPhotoView: View {
 // Add InfoView struct before ContentView
 private struct InfoView: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject var camera: CameraModel
     
     private var appIcon: UIImage? {
         if let iconsDictionary = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
@@ -569,6 +580,30 @@ private struct InfoView: View {
                                 .fill(Color.appGradientStart.opacity(0.1))
                         )
                     }
+                    
+                    Link(destination: URL(string: "https://buymeacoffee.com/nerdystuff")!) {
+                        HStack {
+                            Image(systemName: "cup.and.saucer.fill")
+                            Text("Buy Me a Coffee")
+                            Spacer()
+                            Image(systemName: "arrow.up.right.circle.fill")
+                        }
+                        .foregroundColor(.appGradientStart)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(camera.photoCount >= 5 ? 
+                                    Color.appGradientStart.opacity(0.2) :
+                                    Color.appGradientStart.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(camera.photoCount >= 5 ? 
+                                            Color.appGradientStart.opacity(0.3) :
+                                            Color.clear,
+                                            lineWidth: 2)
+                                )
+                        )
+                    }
                 }
                 .padding(.horizontal)
                 
@@ -586,6 +621,30 @@ private struct InfoView: View {
                 }
             }
         }
+        .onDisappear {
+            // Reset counter when info view is dismissed
+            camera.resetPhotoCount()
+        }
+    }
+}
+
+// Add JumpingCoffeeIcon view before ContentView
+private struct JumpingCoffeeIcon: View {
+    @State private var isJumping = false
+    
+    var body: some View {
+        Image(systemName: "cup.and.saucer.fill")
+            .font(.system(size: 24))
+            .foregroundColor(.appGradientStart)
+            .offset(y: isJumping ? -5 : 0)
+            .animation(
+                Animation.easeInOut(duration: 0.5)
+                    .repeatForever(autoreverses: true),
+                value: isJumping
+            )
+            .onAppear {
+                isJumping = true
+            }
     }
 }
 
@@ -760,16 +819,20 @@ struct ContentView: View {
                 .foregroundColor(.appGradientStart)
                 .frame(maxWidth: .infinity)
             
-            // Info button aligned to the trailing edge
+            // Info/Coffee button aligned to the trailing edge
             HStack {
                 Spacer()
                 Button(action: { showInfoView = true }) {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: buttonSize))
-                        .foregroundColor(.appGradientStart)
+                    if camera.photoCount >= 5 {
+                        JumpingCoffeeIcon()
+                    } else {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: buttonSize))
+                            .foregroundColor(.appGradientStart)
+                    }
                 }
             }
-            .padding(.trailing, cardPadding)  // Match exactly with card padding
+            .padding(.trailing, cardPadding)
         }
         .frame(height: bannerHeight)
     }
@@ -1015,7 +1078,7 @@ struct ContentView: View {
             ImagePicker(selectedImage: $referenceImage)
         }
         .sheet(isPresented: $showInfoView) {
-            InfoView()
+            InfoView(camera: camera)
         }
         .onRotate { newOrientation in
             handleOrientationChange(newOrientation)
