@@ -547,7 +547,7 @@ private struct InfoView: View {
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.appGradientStart)
                     
-                    Text("© 2024 nerdyStuff")
+                    Text("© 2025 nerdyStuff")
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }
