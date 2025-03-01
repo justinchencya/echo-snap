@@ -316,6 +316,7 @@ struct ImagePicker: UIViewControllerRepresentable {
 struct ZoomableImageView: View {
     let image: UIImage
     @Binding var shouldReset: Bool
+    @Binding var isTransformed: Bool
     let isLandscape: Bool
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
@@ -323,6 +324,10 @@ struct ZoomableImageView: View {
     @State private var lastOffset: CGSize = .zero
     @State private var rotation: Angle = .zero
     @State private var lastRotation: Angle = .zero
+    
+    private func checkTransformation() {
+        isTransformed = scale != 1.0 || offset != .zero || rotation != .zero
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -344,6 +349,7 @@ struct ZoomableImageView: View {
                                     let delta = value / lastScale
                                     lastScale = value
                                     scale = scale * delta
+                                    checkTransformation()
                                 }
                                 .onEnded { _ in
                                     lastScale = 1.0
@@ -353,6 +359,7 @@ struct ZoomableImageView: View {
                                     let delta = value - lastRotation
                                     lastRotation = value
                                     rotation += delta
+                                    checkTransformation()
                                 }
                                 .onEnded { _ in
                                     lastRotation = .zero
@@ -369,6 +376,7 @@ struct ZoomableImageView: View {
                                     width: offset.width + delta.width,
                                     height: offset.height + delta.height
                                 )
+                                checkTransformation()
                             }
                             .onEnded { _ in
                                 lastOffset = .zero
@@ -383,6 +391,7 @@ struct ZoomableImageView: View {
                                 offset = .zero
                                 rotation = .zero
                             }
+                            checkTransformation()
                         }
                 )
                 .simultaneousGesture(
@@ -397,6 +406,7 @@ struct ZoomableImageView: View {
                             rotation = .zero
                         }
                         shouldReset = false
+                        checkTransformation()
                     }
                 }
         }
@@ -521,7 +531,7 @@ private struct InfoView: View {
         }
         return nil
     }
-    
+
     var body: some View {
         NavigationView {
             VStack(spacing: 24) {
@@ -652,6 +662,7 @@ struct ContentView: View {
     @State private var showImagePicker = false
     @State private var referenceImage: UIImage?
     @State private var shouldResetImage = false
+    @State private var isImageTransformed = false
     @StateObject private var camera = CameraModel()
     @State private var orientation = UIDevice.current.orientation
     @State private var showInfoView = false
@@ -722,11 +733,9 @@ struct ContentView: View {
                     camera.discardPhotoAndReopen()
                 }
             }) {
-                Image(systemName: "xmark.circle.fill")
+                Image(systemName: "xmark.circle")
                     .font(.system(size: buttonSize))
-                    .foregroundColor(.red)
-                    .background(Circle().fill(Color.white))
-                    .shadow(color: .black.opacity(0.2), radius: 4)
+                    .foregroundColor(.appGradientStart)
             }
             
             Button(action: {
@@ -734,11 +743,9 @@ struct ContentView: View {
                     camera.savePhotoAndReopen()
                 }
             }) {
-                Image(systemName: "checkmark.circle.fill")
+                Image(systemName: "checkmark.circle")
                     .font(.system(size: buttonSize))
-                    .foregroundColor(.green)
-                    .background(Circle().fill(Color.white))
-                    .shadow(color: .black.opacity(0.2), radius: 4)
+                    .foregroundColor(.appGradientStart)
             }
         }
         .padding([.bottom, .trailing], buttonPadding)
@@ -747,27 +754,17 @@ struct ContentView: View {
     // Helper view for the reference image buttons
     private func referenceImageButtons() -> some View {
         HStack(spacing: buttonSpacing) {
-            Button(action: {
-                shouldResetImage = true
-            }) {
-                Image(systemName: "arrow.counterclockwise.circle.fill")
-                    .font(.system(size: buttonSize))
-                    .foregroundColor(.blue)
-                    .background(Circle().fill(Color.white))
-                    .shadow(color: .black.opacity(0.2), radius: 4)
-            }
-            
-            Button(action: {
-                showImagePicker = true
-            }) {
-                Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
-                    .font(.system(size: buttonSize))
-                    .foregroundColor(.green)
-                    .background(Circle().fill(Color.white))
-                    .shadow(color: .black.opacity(0.2), radius: 4)
+            if isImageTransformed {
+                Button(action: {
+                    shouldResetImage = true
+                }) {
+                    Image(systemName: "arrow.counterclockwise.circle")
+                        .font(.system(size: buttonSize))
+                        .foregroundColor(.appGradientStart)
+                }
+                .padding([.bottom, .trailing], buttonPadding)
             }
         }
-        .padding([.bottom, .trailing], buttonPadding)
     }
     
     // Helper view for the camera preview controls
@@ -781,11 +778,9 @@ struct ContentView: View {
                         camera.togglePreview()
                     }
                 }) {
-                    Image(systemName: "xmark.circle.fill")
+                    Image(systemName: "xmark.circle")
                         .font(.system(size: buttonSize))
-                        .foregroundColor(.white)
-                        .background(Circle().fill(Color.black.opacity(0.5)))
-                        .shadow(color: .black.opacity(0.2), radius: 4)
+                        .foregroundColor(.appGradientStart)
                 }
                 .padding(closeButtonPadding)
             }
@@ -797,12 +792,12 @@ struct ContentView: View {
                 camera.capturePhoto()
             }) {
                 Circle()
-                    .fill(Color.white)
+                    .fill(Color.appGradientStart)
                     .frame(width: captureButtonSize, height: captureButtonSize)
-                    .shadow(color: .black.opacity(0.3), radius: 5)
+                    .shadow(color: .black.opacity(0.2), radius: 4)
                     .overlay(
                         Circle()
-                            .stroke(Color.black.opacity(0.2), lineWidth: 2)
+                            .stroke(Color.white, lineWidth: 2)
                             .padding(4)
                     )
             }
@@ -923,8 +918,13 @@ struct ContentView: View {
                             
                             if let referenceImage = referenceImage {
                                 ZStack {
-                                    ZoomableImageView(image: referenceImage, shouldReset: $shouldResetImage, isLandscape: true)
-                                        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
+                                    ZoomableImageView(
+                                        image: referenceImage,
+                                        shouldReset: $shouldResetImage,
+                                        isTransformed: $isImageTransformed,
+                                        isLandscape: true
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
                                     
                                     // Bottom-right buttons
                                     VStack {
@@ -944,11 +944,9 @@ struct ContentView: View {
                                                     self.referenceImage = nil
                                                 }
                                             }) {
-                                                Image(systemName: "xmark.circle.fill")
+                                                Image(systemName: "xmark.circle")
                                                     .font(.system(size: buttonSize))
-                                                    .foregroundColor(.white)
-                                                    .background(Circle().fill(Color.black.opacity(0.5)))
-                                                    .shadow(color: .black.opacity(0.2), radius: 4)
+                                                    .foregroundColor(.appGradientStart)
                                             }
                                             .padding(closeButtonPadding)
                                         }
@@ -1002,8 +1000,13 @@ struct ContentView: View {
                             
                             if let referenceImage = referenceImage {
                                 ZStack {
-                                    ZoomableImageView(image: referenceImage, shouldReset: $shouldResetImage, isLandscape: false)
-                                        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
+                                    ZoomableImageView(
+                                        image: referenceImage,
+                                        shouldReset: $shouldResetImage,
+                                        isTransformed: $isImageTransformed,
+                                        isLandscape: false
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
                                     
                                     // Bottom-right buttons
                                     VStack {
@@ -1023,11 +1026,9 @@ struct ContentView: View {
                                                     self.referenceImage = nil
                                                 }
                                             }) {
-                                                Image(systemName: "xmark.circle.fill")
+                                                Image(systemName: "xmark.circle")
                                                     .font(.system(size: buttonSize))
-                                                    .foregroundColor(.white)
-                                                    .background(Circle().fill(Color.black.opacity(0.5)))
-                                                    .shadow(color: .black.opacity(0.2), radius: 4)
+                                                    .foregroundColor(.appGradientStart)
                                             }
                                             .padding(closeButtonPadding)
                                         }
