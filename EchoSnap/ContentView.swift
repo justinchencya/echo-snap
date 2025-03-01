@@ -529,20 +529,53 @@ private struct CapturedPhotoView: View {
     let photoActions: () -> AnyView
     
     var body: some View {
-        ZStack {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        GeometryReader { geometry in
+            let maxWidth = geometry.size.width * 0.9
+            let maxHeight = geometry.size.height * 0.9
+            let imageAspectRatio = image.size.width / image.size.height
             
-            // Bottom-right buttons
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    AnyView(photoActions())
+            let size: CGSize = {
+                if maxWidth / maxHeight > imageAspectRatio {
+                    // Height constrained
+                    let height = maxHeight
+                    let width = height * imageAspectRatio
+                    return CGSize(width: width, height: height)
+                } else {
+                    // Width constrained
+                    let width = maxWidth
+                    let height = width / imageAspectRatio
+                    return CGSize(width: width, height: height)
                 }
+            }()
+            
+            ZStack {
+                // Photo preview with consistent size
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: size.width, height: size.height)
+                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+                    .background(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.05), radius: 4)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(Color.appGradientStart.opacity(0.1), lineWidth: 1)
+                    )
+                
+                // Bottom-right buttons
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        AnyView(photoActions())
+                    }
+                }
+                .frame(width: maxWidth, height: maxHeight)
             }
+            .position(x: geometry.size.width/2, y: geometry.size.height/2)
         }
     }
 }
