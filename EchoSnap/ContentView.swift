@@ -106,13 +106,12 @@ class CameraModel: NSObject, ObservableObject {
     
     func capturePhoto() {
         let settings = AVCapturePhotoSettings()
-        let previewPixelType = settings.availablePreviewPhotoPixelFormatTypes.first!
-        let previewFormat = [
-            kCVPixelBufferPixelFormatTypeKey as String: previewPixelType,
-            kCVPixelBufferWidthKey as String: 160,
-            kCVPixelBufferHeightKey as String: 160
-        ]
-        settings.previewPhotoFormat = previewFormat
+        
+        // Configure for maximum quality
+        settings.photoQualityPrioritization = .quality
+        
+        // Enable high quality capture
+        settings.isHighResolutionPhotoEnabled = true
         
         // Get the video orientation from the interface orientation
         if let connection = output.connection(with: .video) {
@@ -229,6 +228,27 @@ class CameraModel: NSObject, ObservableObject {
                 return
             }
             
+            // Configure camera for high quality photo capture
+            try device.lockForConfiguration()
+            
+            // Select highest resolution format that supports photo capture
+            let formats = device.formats.filter { format in
+                format.isHighestPhotoQualitySupported &&
+                CMFormatDescriptionGetMediaType(format.formatDescription) == kCMMediaType_Video
+            }
+            
+            if let bestFormat = formats.max(by: { first, second in
+                let firstDimensions = CMVideoFormatDescriptionGetDimensions(first.formatDescription)
+                let secondDimensions = CMVideoFormatDescriptionGetDimensions(second.formatDescription)
+                return firstDimensions.width * firstDimensions.height < secondDimensions.width * secondDimensions.height
+            }) {
+                device.activeFormat = bestFormat
+                let dimensions = CMVideoFormatDescriptionGetDimensions(bestFormat.formatDescription)
+                print("Selected camera format: \(dimensions.width)x\(dimensions.height)")
+            }
+            
+            device.unlockForConfiguration()
+            
             let input = try AVCaptureDeviceInput(device: device)
             if session.canAddInput(input) {
                 session.addInput(input)
@@ -236,14 +256,22 @@ class CameraModel: NSObject, ObservableObject {
             
             if session.canAddOutput(output) {
                 session.addOutput(output)
+                
+                // Configure photo output for maximum quality
+                output.maxPhotoQualityPrioritization = .quality
+                
+                // Enable high resolution capture
+                output.isHighResolutionCaptureEnabled = true
             }
+            
+            session.sessionPreset = .photo
             
             session.commitConfiguration()
             
             if !session.isRunning {
                 session.startRunning()
             }
-            } catch {
+        } catch {
             print("Failed to setup camera: \(error.localizedDescription)")
         }
     }
