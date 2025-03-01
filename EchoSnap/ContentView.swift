@@ -318,6 +318,7 @@ struct ZoomableImageView: View {
     @Binding var shouldReset: Bool
     @Binding var isTransformed: Bool
     let isLandscape: Bool
+    let cornerRadius: CGFloat
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
@@ -337,6 +338,7 @@ struct ZoomableImageView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: size.width, height: size.height)
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
                 .scaleEffect(scale)
                 .offset(offset)
                 .rotationEffect(rotation)
@@ -922,9 +924,9 @@ struct ContentView: View {
                                         image: referenceImage,
                                         shouldReset: $shouldResetImage,
                                         isTransformed: $isImageTransformed,
-                                        isLandscape: true
+                                        isLandscape: true,
+                                        cornerRadius: cardCornerRadius
                                     )
-                                    .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
                                     
                                     // Bottom-right buttons
                                     VStack {
@@ -1004,9 +1006,9 @@ struct ContentView: View {
                                         image: referenceImage,
                                         shouldReset: $shouldResetImage,
                                         isTransformed: $isImageTransformed,
-                                        isLandscape: false
+                                        isLandscape: false,
+                                        cornerRadius: cardCornerRadius
                                     )
-                                    .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
                                     
                                     // Bottom-right buttons
                                     VStack {
