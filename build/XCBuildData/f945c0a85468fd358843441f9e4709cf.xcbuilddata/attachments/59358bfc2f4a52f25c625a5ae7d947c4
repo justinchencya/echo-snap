@@ -1,0 +1,18 @@
+{
+  "" : {
+    "diagnostics" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/build/EchoSnap.build/Debug-iphoneos/EchoSnapTests.build/Objects-normal/arm64/EchoSnapTests-master.dia",
+    "emit-module-dependencies" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/build/EchoSnap.build/Debug-iphoneos/EchoSnapTests.build/Objects-normal/arm64/EchoSnapTests-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/build/EchoSnap.build/Debug-iphoneos/EchoSnapTests.build/Objects-normal/arm64/EchoSnapTests-master-emit-module.dia",
+    "swift-dependencies" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/build/EchoSnap.build/Debug-iphoneos/EchoSnapTests.build/Objects-normal/arm64/EchoSnapTests-master.swiftdeps"
+  },
+  "/Users/justinchencya/Documents/AI Apps/EchoSnap/EchoSnapTests/EchoSnapTests.swift" : {
+    "const-values" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/build/EchoSnap.build/Debug-iphoneos/EchoSnapTests.build/Objects-normal/arm64/EchoSnapTests.swiftconstvalues",
+    "dependencies" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/build/EchoSnap.build/Debug-iphoneos/EchoSnapTests.build/Objects-normal/arm64/EchoSnapTests.d",
+    "diagnostics" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/build/EchoSnap.build/Debug-iphoneos/EchoSnapTests.build/Objects-normal/arm64/EchoSnapTests.dia",
+    "index-unit-output-path" : "/EchoSnap.build/Debug-iphoneos/EchoSnapTests.build/Objects-normal/arm64/EchoSnapTests.o",
+    "llvm-bc" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/build/EchoSnap.build/Debug-iphoneos/EchoSnapTests.build/Objects-normal/arm64/EchoSnapTests.bc",
+    "object" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/build/EchoSnap.build/Debug-iphoneos/EchoSnapTests.build/Objects-normal/arm64/EchoSnapTests.o",
+    "swift-dependencies" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/build/EchoSnap.build/Debug-iphoneos/EchoSnapTests.build/Objects-normal/arm64/EchoSnapTests.swiftdeps",
+    "swiftmodule" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/build/EchoSnap.build/Debug-iphoneos/EchoSnapTests.build/Objects-normal/arm64/EchoSnapTests~partial.swiftmodule"
+  }
+}

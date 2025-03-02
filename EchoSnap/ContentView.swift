@@ -765,9 +765,14 @@ struct ContentView: View {
                     camera.savePhotoAndReopen()
                 }
             }) {
-                Image(systemName: "checkmark.circle")
+                Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: buttonSize))
-                    .foregroundColor(.appGradientStart)
+                    .foregroundColor(.white)
+                    .background(
+                        Circle()
+                            .fill(Color.appGradientStart)
+                            .frame(width: buttonSize + 8, height: buttonSize + 8)
+                    )
             }
             
             Button(action: {
@@ -775,9 +780,14 @@ struct ContentView: View {
                     camera.discardPhotoAndReopen()
                 }
             }) {
-                Image(systemName: "xmark.circle")
+                Image(systemName: "xmark.circle.fill")
                     .font(.system(size: buttonSize))
-                    .foregroundColor(.appGradientStart)
+                    .foregroundColor(.white)
+                    .background(
+                        Circle()
+                            .fill(Color.red.opacity(0.8))
+                            .frame(width: buttonSize + 8, height: buttonSize + 8)
+                    )
             }
         }
         .padding(standardPadding)
@@ -830,9 +840,14 @@ struct ContentView: View {
                             camera.togglePreview()
                         }
                     }) {
-                        Image(systemName: "xmark.circle")
+                        Image(systemName: "xmark.circle.fill")
                             .font(.system(size: buttonSize))
-                            .foregroundColor(.appGradientStart)
+                            .foregroundColor(.white)
+                            .background(
+                                Circle()
+                                    .fill(Color.red.opacity(0.8))
+                                    .frame(width: buttonSize + 8, height: buttonSize + 8)
+                            )
                     }
                     .padding(standardPadding)
                 }
@@ -978,9 +993,14 @@ struct ContentView: View {
                                                     self.referenceImage = nil
                                                 }
                                             }) {
-                                                Image(systemName: "xmark.circle")
+                                                Image(systemName: "xmark.circle.fill")
                                                     .font(.system(size: buttonSize))
-                                                    .foregroundColor(.appGradientStart)
+                                                    .foregroundColor(.white)
+                                                    .background(
+                                                        Circle()
+                                                            .fill(Color.red.opacity(0.8))
+                                                            .frame(width: buttonSize + 8, height: buttonSize + 8)
+                                                    )
                                             }
                                             .padding(standardPadding)
                                         }
@@ -1060,9 +1080,14 @@ struct ContentView: View {
                                                     self.referenceImage = nil
                                                 }
                                             }) {
-                                                Image(systemName: "xmark.circle")
+                                                Image(systemName: "xmark.circle.fill")
                                                     .font(.system(size: buttonSize))
-                                                    .foregroundColor(.appGradientStart)
+                                                    .foregroundColor(.white)
+                                                    .background(
+                                                        Circle()
+                                                            .fill(Color.red.opacity(0.8))
+                                                            .frame(width: buttonSize + 8, height: buttonSize + 8)
+                                                    )
                                             }
                                             .padding(standardPadding)
                                         }
