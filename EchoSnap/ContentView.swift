@@ -567,92 +567,97 @@ private struct InfoView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
-                if let icon = appIcon {
-                    Image(uiImage: icon)
-                        .resizable()
-                        .frame(width: 80, height: 80)
-                        .cornerRadius(16)
-                } else {
-                    // Fallback to app name if icon is not found
-                    Text("ES")
-                        .font(.system(size: 40, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 80, height: 80)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.appGradientStart)
-                        )
-                }
-                
-                VStack(spacing: 16) {
-                    Text("EchoSnap")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.appGradientStart)
-                    
-                    Text("© 2025 nerdyStuff")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                }
-                
-                VStack(spacing: 12) {
-                    Link(destination: URL(string: "https://www.nerdystuff.xyz")!) {
-                        HStack {
-                            Text("About Us")
-                            Spacer()
-                            Image(systemName: "arrow.up.right.circle.fill")
-                        }
-                        .foregroundColor(.appGradientStart)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.appGradientStart.opacity(0.1))
-                        )
+            ScrollView {
+                VStack(spacing: 24) {
+                    if let icon = appIcon {
+                        Image(uiImage: icon)
+                            .resizable()
+                            .frame(width: 80, height: 80)
+                            .cornerRadius(16)
+                    } else {
+                        // Fallback to app name if icon is not found
+                        Text("ES")
+                            .font(.system(size: 40, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 80, height: 80)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.appGradientStart)
+                            )
                     }
                     
-                    Link(destination: URL(string: "https://www.nerdystuff.xyz/pages/contact-us")!) {
-                        HStack {
-                            Text("Contact")
-                            Spacer()
-                            Image(systemName: "arrow.up.right.circle.fill")
-                        }
-                        .foregroundColor(.appGradientStart)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.appGradientStart.opacity(0.1))
-                        )
+                    VStack(spacing: 16) {
+                        Text("EchoSnap")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.appGradientStart)
+                        
+                        Text("© 2025 nerdyStuff")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
                     }
                     
-                    Link(destination: URL(string: "https://buymeacoffee.com/nerdystuff")!) {
-                        HStack {
-                            Image(systemName: "cup.and.saucer.fill")
-                            Text("Buy Me a Coffee")
-                            Spacer()
-                            Image(systemName: "arrow.up.right.circle.fill")
+                    VStack(spacing: 12) {
+                        Link(destination: URL(string: "https://www.nerdystuff.xyz")!) {
+                            HStack {
+                                Text("About Us")
+                                Spacer()
+                                Image(systemName: "arrow.up.right.circle.fill")
+                            }
+                            .foregroundColor(.appGradientStart)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.appGradientStart.opacity(0.1))
+                            )
                         }
-                        .foregroundColor(.appGradientStart)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(camera.photoCount >= 5 ? 
-                                    Color.appGradientStart.opacity(0.2) :
-                                    Color.appGradientStart.opacity(0.1))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(camera.photoCount >= 5 ? 
-                                            Color.appGradientStart.opacity(0.3) :
-                                            Color.clear,
-                                            lineWidth: 2)
-                                )
-                        )
+                        
+                        Link(destination: URL(string: "https://www.nerdystuff.xyz/pages/contact-us")!) {
+                            HStack {
+                                Text("Contact")
+                                Spacer()
+                                Image(systemName: "arrow.up.right.circle.fill")
+                            }
+                            .foregroundColor(.appGradientStart)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.appGradientStart.opacity(0.1))
+                            )
+                        }
+                        
+                        Link(destination: URL(string: "https://buymeacoffee.com/nerdystuff")!) {
+                            HStack {
+                                Image(systemName: "cup.and.saucer.fill")
+                                Text("Buy Me a Coffee")
+                                Spacer()
+                                Image(systemName: "arrow.up.right.circle.fill")
+                            }
+                            .foregroundColor(.appGradientStart)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(camera.photoCount >= 5 ? 
+                                        Color.appGradientStart.opacity(0.2) :
+                                        Color.appGradientStart.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(camera.photoCount >= 5 ? 
+                                                Color.appGradientStart.opacity(0.3) :
+                                                Color.clear,
+                                                lineWidth: 2)
+                                    )
+                            )
+                        }
                     }
+                    .padding(.horizontal)
+                    
+                    Spacer(minLength: 0)
                 }
+                .padding(.top, 40)
+                .frame(maxWidth: 400) // Fixed maximum width
+                .frame(maxHeight: .infinity)
                 .padding(.horizontal)
-                
-                Spacer()
             }
-            .padding(.top, 40)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -664,6 +669,7 @@ private struct InfoView: View {
                 }
             }
         }
+        .navigationViewStyle(StackNavigationViewStyle()) // Forces modal style in all orientations
         .onDisappear {
             // Reset counter when info view is dismissed
             camera.resetPhotoCount()
