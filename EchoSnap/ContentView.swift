@@ -317,6 +317,45 @@ struct ImagePicker: UIViewControllerRepresentable {
     }
 }
 
+// Add these utility functions before ContentView
+private struct ViewUtilities {
+    static func calculateImageSize(geometry: GeometryProxy, image: UIImage, isLandscape: Bool) -> CGSize {
+        let containerWidth = geometry.size.width
+        let containerHeight = geometry.size.height
+        let imageAspectRatio = image.size.width / image.size.height
+        
+        if isLandscape {
+            let maxHeight = containerHeight * 0.9 // 90% of container height
+            let width = maxHeight * imageAspectRatio
+            if width <= containerWidth {
+                return CGSize(width: width, height: maxHeight)
+            } else {
+                let maxWidth = containerWidth * 0.9 // 90% of container width
+                return CGSize(width: maxWidth, height: maxWidth / imageAspectRatio)
+            }
+        } else {
+            let maxWidth = containerWidth * 0.9 // 90% of container width
+            let height = maxWidth / imageAspectRatio
+            if height <= containerHeight {
+                return CGSize(width: maxWidth, height: height)
+            } else {
+                let maxHeight = containerHeight * 0.9 // 90% of container height
+                return CGSize(width: maxHeight * imageAspectRatio, height: maxHeight)
+            }
+        }
+    }
+    
+    static func cardBackground(cornerRadius: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: cornerRadius)
+            .fill(Color(.systemBackground))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(Color.appGradientStart.opacity(0.1), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.05), radius: 4)
+    }
+}
+
 struct ZoomableImageView: View {
     let image: UIImage
     @Binding var shouldReset: Bool
@@ -336,7 +375,7 @@ struct ZoomableImageView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            let size = calculateImageSize(geometry: geometry, image: image)
+            let size = ViewUtilities.calculateImageSize(geometry: geometry, image: image, isLandscape: isLandscape)
             
             Image(uiImage: image)
                 .resizable()
@@ -417,32 +456,6 @@ struct ZoomableImageView: View {
                 }
         }
     }
-    
-    private func calculateImageSize(geometry: GeometryProxy, image: UIImage) -> CGSize {
-        let containerWidth = geometry.size.width
-        let containerHeight = geometry.size.height
-        let imageAspectRatio = image.size.width / image.size.height
-        
-        if isLandscape {
-            let maxHeight = containerHeight * 0.9 // 90% of container height
-            let width = maxHeight * imageAspectRatio
-            if width <= containerWidth {
-                return CGSize(width: width, height: maxHeight)
-            } else {
-                let maxWidth = containerWidth * 0.9 // 90% of container width
-                return CGSize(width: maxWidth, height: maxWidth / imageAspectRatio)
-            }
-        } else {
-            let maxWidth = containerWidth * 0.9 // 90% of container width
-            let height = maxWidth / imageAspectRatio
-            if height <= containerHeight {
-                return CGSize(width: maxWidth, height: height)
-            } else {
-                let maxHeight = containerHeight * 0.9 // 90% of container height
-                return CGSize(width: maxHeight * imageAspectRatio, height: maxHeight)
-            }
-        }
-    }
 }
 
 struct DeviceRotationViewModifier: ViewModifier {
@@ -504,23 +517,7 @@ private struct CapturedPhotoView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            let maxWidth = geometry.size.width * 0.9
-            let maxHeight = geometry.size.height * 0.9
-            let imageAspectRatio = image.size.width / image.size.height
-            
-            let size: CGSize = {
-                if maxWidth / maxHeight > imageAspectRatio {
-                    // Height constrained
-                    let height = maxHeight
-                    let width = height * imageAspectRatio
-                    return CGSize(width: width, height: height)
-                } else {
-                    // Width constrained
-                    let width = maxWidth
-                    let height = width / imageAspectRatio
-                    return CGSize(width: width, height: height)
-                }
-            }()
+            let size = ViewUtilities.calculateImageSize(geometry: geometry, image: image, isLandscape: false)
             
             ZStack {
                 // Photo preview with consistent size
@@ -932,17 +929,6 @@ struct ContentView: View {
         }
     }
     
-    // Helper function for consistent card styling
-    private func cardBackground() -> some View {
-        RoundedRectangle(cornerRadius: cardCornerRadius)
-            .fill(Color(.systemBackground))
-            .overlay(
-                RoundedRectangle(cornerRadius: cardCornerRadius)
-                    .stroke(Color.appGradientStart.opacity(0.1), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.05), radius: 4)
-    }
-    
     var body: some View {
         VStack(spacing: 0) {
             titleBanner()
@@ -953,7 +939,7 @@ struct ContentView: View {
                     HStack(spacing: cardSpacing) {
                         // Left half: Reference Image
                         ZStack {
-                            cardBackground()
+                            ViewUtilities.cardBackground(cornerRadius: cardCornerRadius)
                             
                             if let referenceImage = referenceImage {
                                 ZStack {
@@ -1000,7 +986,7 @@ struct ContentView: View {
                         
                         // Right half: Camera
                         ZStack {
-                            cardBackground()
+                            ViewUtilities.cardBackground(cornerRadius: cardCornerRadius)
                             
                             if !camera.isPreviewActive {
                                 EnhancedCameraPlaceholder(action: { camera.togglePreview() })
@@ -1035,7 +1021,7 @@ struct ContentView: View {
                     VStack(spacing: cardSpacing) {
                         // Top half: Reference Image
                         ZStack {
-                            cardBackground()
+                            ViewUtilities.cardBackground(cornerRadius: cardCornerRadius)
                             
                             if let referenceImage = referenceImage {
                                 ZStack {
@@ -1082,7 +1068,7 @@ struct ContentView: View {
                         
                         // Bottom half: Camera
                         ZStack {
-                            cardBackground()
+                            ViewUtilities.cardBackground(cornerRadius: cardCornerRadius)
                             
                             if !camera.isPreviewActive {
                                 EnhancedCameraPlaceholder(action: { camera.togglePreview() })
