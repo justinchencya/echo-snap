@@ -89,6 +89,16 @@ class CameraModel: NSObject, ObservableObject {
         checkPermissions()
     }
     
+    private func restartCameraSession() {
+        recentImage = nil
+        isPhotoTaken = false
+        if !session.isRunning {
+            DispatchQueue.global(qos: .userInitiated).async {
+                self.session.startRunning()
+            }
+        }
+    }
+    
     func togglePreview() {
         isPreviewActive.toggle()
         if isPreviewActive {
@@ -136,50 +146,16 @@ class CameraModel: NSObject, ObservableObject {
         output.capturePhoto(with: settings, delegate: self)
     }
     
-    func retakePhoto() {
-        recentImage = nil
-        isPhotoTaken = false
-        if !session.isRunning {
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.session.startRunning()
-            }
-        }
-    }
-    
-    func deletePhoto() {
-        recentImage = nil
-        isPhotoTaken = false
-        // Auto restart camera preview
-        if !session.isRunning {
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.session.startRunning()
-            }
-        }
-    }
-    
     func savePhotoAndReopen() {
         if let image = recentImage {
             UIImageWriteToSavedPhotosAlbum(image, self, #selector(self.image(_:didFinishSavingWithError:contextInfo:)), nil)
             incrementPhotoCount()
         }
-        recentImage = nil
-        isPhotoTaken = false
-        if !session.isRunning {
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.session.startRunning()
-            }
-        }
+        restartCameraSession()
     }
     
     func discardPhotoAndReopen() {
-        // Just clear and reopen camera without saving
-        recentImage = nil
-        isPhotoTaken = false
-        if !session.isRunning {
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.session.startRunning()
-            }
-        }
+        restartCameraSession()
     }
     
     func incrementPhotoCount() {
@@ -733,8 +709,7 @@ struct ContentView: View {
     private let buttonSize: CGFloat = 24
     private let captureButtonSize: CGFloat = 60
     private let buttonSpacing: CGFloat = 12  // Spacing between buttons
-    private let buttonPadding: CGFloat = 16  // Padding from edges
-    private let closeButtonPadding: CGFloat = 16  // Padding for close button
+    private let standardPadding: CGFloat = 16  // Standard padding for all edges
     private let bannerHeight: CGFloat = 30  // Height for the title banner
     private let cardPadding: CGFloat = 12
     private let cardSpacing: CGFloat = 4
@@ -790,17 +765,7 @@ struct ContentView: View {
     
     // Helper view for the photo action buttons
     private func photoActionButtons() -> some View {
-        HStack(spacing: buttonSpacing) {
-            Button(action: {
-                withAnimation(.spring()) {
-                    camera.discardPhotoAndReopen()
-                }
-            }) {
-                Image(systemName: "xmark.circle")
-                    .font(.system(size: buttonSize))
-                    .foregroundColor(.appGradientStart)
-            }
-            
+        VStack(spacing: buttonSpacing) {
             Button(action: {
                 withAnimation(.spring()) {
                     camera.savePhotoAndReopen()
@@ -810,8 +775,18 @@ struct ContentView: View {
                     .font(.system(size: buttonSize))
                     .foregroundColor(.appGradientStart)
             }
+            
+            Button(action: {
+                withAnimation(.spring()) {
+                    camera.discardPhotoAndReopen()
+                }
+            }) {
+                Image(systemName: "xmark.circle")
+                    .font(.system(size: buttonSize))
+                    .foregroundColor(.appGradientStart)
+            }
         }
-        .padding([.bottom, .trailing], buttonPadding)
+        .padding([.trailing, .top], standardPadding)
     }
     
     // Helper view for the reference image buttons
@@ -825,7 +800,7 @@ struct ContentView: View {
                         .font(.system(size: buttonSize))
                         .foregroundColor(.appGradientStart)
                 }
-                .padding([.bottom, .trailing], buttonPadding)
+                .padding([.bottom, .trailing], standardPadding)
             }
         }
     }
@@ -845,7 +820,7 @@ struct ContentView: View {
                         .font(.system(size: buttonSize))
                         .foregroundColor(.appGradientStart)
                 }
-                .padding(closeButtonPadding)
+                .padding([.trailing, .top], standardPadding)
             }
             
             Spacer()
@@ -864,7 +839,7 @@ struct ContentView: View {
                             .padding(4)
                     )
             }
-            .padding(.bottom, buttonPadding)
+            .padding(.bottom, standardPadding)
         }
     }
     
@@ -1011,7 +986,7 @@ struct ContentView: View {
                                                     .font(.system(size: buttonSize))
                                                     .foregroundColor(.appGradientStart)
                                             }
-                                            .padding(closeButtonPadding)
+                                            .padding(standardPadding)
                                         }
                                         Spacer()
                                     }
@@ -1093,7 +1068,7 @@ struct ContentView: View {
                                                     .font(.system(size: buttonSize))
                                                     .foregroundColor(.appGradientStart)
                                             }
-                                            .padding(closeButtonPadding)
+                                            .padding(standardPadding)
                                         }
                                         Spacer()
                                     }
