@@ -490,11 +490,9 @@ private struct CameraPreviewContainer: View {
                         .stroke(Color.appGradientStart.opacity(0.1), lineWidth: 1)
                 )
             
-            // Controls overlay
+            // Controls overlay positioned relative to the full container
             AnyView(controls())
-                .frame(width: maxWidth, height: maxHeight)
         }
-        .position(x: geometry.size.width/2, y: geometry.size.height/2)
     }
 }
 
@@ -543,13 +541,12 @@ private struct CapturedPhotoView: View {
                 
                 // Bottom-right buttons
                 VStack {
-                    Spacer()
                     HStack {
                         Spacer()
                         AnyView(photoActions())
                     }
+                    Spacer()
                 }
-                .frame(width: maxWidth, height: maxHeight)
             }
             .position(x: geometry.size.width/2, y: geometry.size.height/2)
         }
@@ -786,7 +783,7 @@ struct ContentView: View {
                     .foregroundColor(.appGradientStart)
             }
         }
-        .padding([.trailing, .top], standardPadding)
+        .padding(standardPadding)
     }
     
     // Helper view for the reference image buttons
@@ -807,39 +804,43 @@ struct ContentView: View {
     
     // Helper view for the camera preview controls
     private func cameraPreviewControls() -> some View {
-        VStack {
-            // Close button at top-right
-            HStack {
+        ZStack {
+            // Camera preview with capture button
+            VStack {
                 Spacer()
                 Button(action: {
-                    withAnimation(.spring()) {
-                        camera.togglePreview()
-                    }
+                    camera.capturePhoto()
                 }) {
-                    Image(systemName: "xmark.circle")
-                        .font(.system(size: buttonSize))
-                        .foregroundColor(.appGradientStart)
+                    Circle()
+                        .fill(Color.appGradientStart)
+                        .frame(width: captureButtonSize, height: captureButtonSize)
+                        .shadow(color: .black.opacity(0.2), radius: 4)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white, lineWidth: 2)
+                                .padding(4)
+                        )
                 }
-                .padding([.trailing, .top], standardPadding)
+                .padding(.bottom, standardPadding)
             }
             
-            Spacer()
-            
-            // Capture button centered at bottom
-            Button(action: {
-                camera.capturePhoto()
-            }) {
-                Circle()
-                    .fill(Color.appGradientStart)
-                    .frame(width: captureButtonSize, height: captureButtonSize)
-                    .shadow(color: .black.opacity(0.2), radius: 4)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.white, lineWidth: 2)
-                            .padding(4)
-                    )
+            // Top-right close button
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        withAnimation(.spring()) {
+                            camera.togglePreview()
+                        }
+                    }) {
+                        Image(systemName: "xmark.circle")
+                            .font(.system(size: buttonSize))
+                            .foregroundColor(.appGradientStart)
+                    }
+                    .padding(standardPadding)
+                }
+                Spacer()
             }
-            .padding(.bottom, standardPadding)
         }
     }
     
