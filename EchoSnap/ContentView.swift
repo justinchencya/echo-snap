@@ -844,11 +844,10 @@ struct ContentView: View {
     // Add title banner view
     private func titleBanner() -> some View {
         ZStack {
-            // Title centered in the entire space
+            // Title centered in the entire space, ignoring other elements
             Text("EchoSnap")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.appGradientStart)
-                .frame(maxWidth: .infinity)
             
             // Info/Coffee button aligned to the trailing edge
             HStack {
@@ -862,10 +861,20 @@ struct ContentView: View {
                             .foregroundColor(.appGradientStart)
                     }
                 }
+                .frame(width: 44)  // Fixed width for the button area
             }
-            .padding(.trailing, cardPadding)
         }
         .frame(height: bannerHeight)
+        .padding(.horizontal, cardPadding)
+    }
+    
+    // Add a custom modifier for landscape padding
+    private struct LandscapePaddingModifier: ViewModifier {
+        let isLandscape: Bool
+        
+        func body(content: Content) -> some View {
+            content
+        }
     }
     
     // Add a new view for the enhanced placeholder:
