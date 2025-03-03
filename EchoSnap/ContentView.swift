@@ -137,14 +137,18 @@ class CameraModel: NSObject, ObservableObject {
     @Published var zoomFactor: CGFloat = 1.0
     @Published var focusPoint: CGPoint?
     @Published var isFocusLocked = false
+    @Published var exposureBias: Float = 0.0
+    @Published var isAdjustingExposure = false
     
     private var isCameraAuthorized = false
     private let output = AVCapturePhotoOutput()
     private var currentDevice: AVCaptureDevice?
     
-    // Add zoom-related properties
+    // Device properties
     private let minZoomFactor: CGFloat = 1.0
     private var maxZoomFactor: CGFloat = 1.0
+    private var minExposureBias: Float = -8.0
+    private var maxExposureBias: Float = 8.0
     
     override init() {
         super.init()
@@ -371,6 +375,35 @@ class CameraModel: NSObject, ObservableObject {
         setZoomFactor(targetZoom, animated: true)
     }
     
+    func setExposureBias(_ bias: Float) {
+        guard let device = currentDevice,
+              device.isExposurePointOfInterestSupported else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            // Clamp the bias value between min and max
+            let clampedBias = max(minExposureBias, min(bias, maxExposureBias))
+            device.setExposureTargetBias(clampedBias) { _ in
+                DispatchQueue.main.async {
+                    self.exposureBias = clampedBias
+                }
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            print("Error setting exposure bias: \(error.localizedDescription)")
+        }
+    }
+    
+    func handleExposureAdjustment(_ translation: CGFloat) {
+        // Convert vertical translation to exposure bias
+        // 100 points of translation = 1.0 exposure bias
+        let biasChange = Float(-translation / 100.0)
+        let newBias = exposureBias + biasChange
+        setExposureBias(newBias)
+    }
+    
     func setFocus(at point: CGPoint, isLocked: Bool = false) {
         guard let device = currentDevice,
               device.isFocusPointOfInterestSupported,
@@ -387,6 +420,11 @@ class CameraModel: NSObject, ObservableObject {
             if device.isExposurePointOfInterestSupported {
                 device.exposurePointOfInterest = point
                 device.exposureMode = isLocked ? .locked : .continuousAutoExposure
+                
+                // Reset exposure bias when changing focus point
+                if !isLocked {
+                    setExposureBias(0.0)
+                }
             }
             
             device.unlockForConfiguration()
@@ -396,10 +434,12 @@ class CameraModel: NSObject, ObservableObject {
                 self.focusPoint = point
                 self.isFocusLocked = isLocked
                 
-                // Clear focus point after animation
+                // Clear focus point after animation if not locked
                 if !isLocked {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        self.focusPoint = nil
+                        if !self.isAdjustingExposure {
+                            self.focusPoint = nil
+                        }
                     }
                 }
             }
@@ -657,10 +697,36 @@ extension View {
     }
 }
 
-// Add FocusSquare view
+// Add ExposureControl view
+private struct ExposureControl: View {
+    let exposureBias: Float
+    let isAdjusting: Bool
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            // Sun icon
+            Image(systemName: exposureBias > 0 ? "sun.max.fill" : "sun.min.fill")
+                .font(.system(size: 20))
+                .foregroundColor(.white)
+            
+            // Exposure value
+            Text(String(format: "%.1f", exposureBias))
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white)
+                .opacity(isAdjusting ? 1 : 0)
+        }
+        .padding(8)
+        .background(Color.black.opacity(0.6))
+        .cornerRadius(8)
+    }
+}
+
+// Update FocusSquare to remove the drag gesture
 private struct FocusSquare: View {
     let point: CGPoint
     let isLocked: Bool
+    let exposureBias: Float
+    let isAdjustingExposure: Bool
     @State private var isAnimating = false
     
     var body: some View {
@@ -685,6 +751,10 @@ private struct FocusSquare: View {
                     .foregroundColor(.white)
                     .offset(y: -(size/2 + 20))
             }
+            
+            // Exposure control
+            ExposureControl(exposureBias: exposureBias, isAdjusting: isAdjustingExposure)
+                .offset(x: size/2 + 20)
         }
         .position(x: point.x, y: point.y)
         .onAppear {
@@ -695,7 +765,7 @@ private struct FocusSquare: View {
     }
 }
 
-// Update CameraPreviewContainer to include focus square
+// Update CameraPreviewContainer to handle exposure adjustment from anywhere
 private struct CameraPreviewContainer: View {
     let geometry: GeometryProxy
     let isLandscape: Bool
@@ -703,6 +773,7 @@ private struct CameraPreviewContainer: View {
     let videoOrientation: AVCaptureVideoOrientation
     let controls: () -> AnyView
     @ObservedObject var camera: CameraModel
+    @GestureState private var dragState: CGFloat = 0
     
     var body: some View {
         let maxWidth = geometry.size.width * 0.9
@@ -726,15 +797,35 @@ private struct CameraPreviewContainer: View {
             .frame(width: maxWidth, height: maxHeight)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .background(ViewUtilities.cardBackground(cornerRadius: 12))
+            // Add drag gesture to the entire preview when focus point exists
+            .gesture(
+                camera.focusPoint == nil ? nil :
+                    DragGesture()
+                        .updating($dragState) { value, state, _ in
+                            state = value.translation.height
+                            camera.isAdjustingExposure = true
+                            camera.handleExposureAdjustment(value.translation.height)
+                        }
+                        .onEnded { _ in
+                            camera.isAdjustingExposure = false
+                            if !camera.isFocusLocked {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    camera.focusPoint = nil
+                                }
+                            }
+                        }
+            )
             
-            // Focus square
+            // Focus square with exposure control
             if let focusPoint = camera.focusPoint {
                 FocusSquare(
                     point: CGPoint(
                         x: focusPoint.x * maxWidth,
                         y: focusPoint.y * maxHeight
                     ),
-                    isLocked: camera.isFocusLocked
+                    isLocked: camera.isFocusLocked,
+                    exposureBias: camera.exposureBias,
+                    isAdjustingExposure: camera.isAdjustingExposure
                 )
             }
             
