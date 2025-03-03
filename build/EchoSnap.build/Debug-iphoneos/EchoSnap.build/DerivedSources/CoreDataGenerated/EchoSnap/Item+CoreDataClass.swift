@@ -2,7 +2,7 @@
 //  Item+CoreDataClass.swift
 //  
 //
-//  Created by Justin Chen on 3/2/25.
+//  Created by Justin Chen on 3/3/25.
 //
 //  This file was automatically generated and should not be edited.
 //

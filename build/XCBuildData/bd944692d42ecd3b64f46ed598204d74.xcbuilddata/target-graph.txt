@@ -1,6 +1,0 @@
-Target dependency graph (3 targets)
-Target 'EchoSnapUITests' in project 'EchoSnap'
-➜ Explicit dependency on target 'EchoSnap' in project 'EchoSnap'
-Target 'EchoSnapTests' in project 'EchoSnap'
-➜ Explicit dependency on target 'EchoSnap' in project 'EchoSnap'
-Target 'EchoSnap' in project 'EchoSnap' (no dependencies)

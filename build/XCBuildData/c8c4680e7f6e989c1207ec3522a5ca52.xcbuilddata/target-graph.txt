@@ -1,2 +1,0 @@
-Target dependency graph (1 target)
-Target 'EchoSnap' in project 'EchoSnap' (no dependencies)

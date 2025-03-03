@@ -44,6 +44,8 @@ extension Color {
 struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
     let videoOrientation: AVCaptureVideoOrientation
+    var onPinchGesture: ((UIPinchGestureRecognizer) -> Void)?
+    var onDoubleTap: (() -> Void)?
     
     class PreviewView: UIView {
         override class var layerClass: AnyClass {
@@ -67,11 +69,40 @@ struct CameraPreview: UIViewRepresentable {
         view.videoPreviewLayer.videoGravity = .resizeAspect
         view.videoPreviewLayer.connection?.videoOrientation = videoOrientation
         
+        // Add pinch gesture recognizer
+        let pinchGesture = UIPinchGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePinch(_:)))
+        view.addGestureRecognizer(pinchGesture)
+        
+        // Add double tap gesture recognizer
+        let doubleTapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleDoubleTap(_:)))
+        doubleTapGesture.numberOfTapsRequired = 2
+        view.addGestureRecognizer(doubleTapGesture)
+        
         return view
     }
     
     func updateUIView(_ uiView: PreviewView, context: Context) {
         uiView.videoPreviewLayer.connection?.videoOrientation = videoOrientation
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject {
+        let parent: CameraPreview
+        
+        init(_ parent: CameraPreview) {
+            self.parent = parent
+        }
+        
+        @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+            parent.onPinchGesture?(gesture)
+        }
+        
+        @objc func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
+            parent.onDoubleTap?()
+        }
     }
 }
 
@@ -81,8 +112,15 @@ class CameraModel: NSObject, ObservableObject {
     @Published var isPhotoTaken = false
     @Published var isPreviewActive = false
     @Published var photoCount: Int = UserDefaults.standard.integer(forKey: "photoCount")
+    @Published var zoomFactor: CGFloat = 1.0
+    
     private var isCameraAuthorized = false
     private let output = AVCapturePhotoOutput()
+    private var currentDevice: AVCaptureDevice?
+    
+    // Add zoom-related properties
+    private let minZoomFactor: CGFloat = 1.0
+    private var maxZoomFactor: CGFloat = 1.0
     
     override init() {
         super.init()
@@ -204,6 +242,10 @@ class CameraModel: NSObject, ObservableObject {
                 return
             }
             
+            // Store current device and configure zoom
+            currentDevice = device
+            maxZoomFactor = min(device.maxAvailableVideoZoomFactor, 5.0) // Limit max zoom to 5x
+            
             // Configure camera for high quality photo capture
             try device.lockForConfiguration()
             
@@ -256,6 +298,53 @@ class CameraModel: NSObject, ObservableObject {
         if session.isRunning {
             session.stopRunning()
         }
+    }
+    
+    func setZoomFactor(_ factor: CGFloat, animated: Bool = true) {
+        guard let device = currentDevice else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            let clampedFactor = max(minZoomFactor, min(factor, maxZoomFactor))
+            
+            if animated {
+                device.ramp(toVideoZoomFactor: Double(clampedFactor), withRate: 4.0)
+            } else {
+                device.videoZoomFactor = Double(clampedFactor)
+            }
+            
+            device.unlockForConfiguration()
+            DispatchQueue.main.async {
+                self.zoomFactor = clampedFactor
+            }
+        } catch {
+            print("Error setting zoom factor: \(error.localizedDescription)")
+        }
+    }
+    
+    func handlePinchGesture(_ gesture: UIPinchGestureRecognizer) {
+        guard let device = currentDevice else { return }
+        
+        switch gesture.state {
+        case .changed:
+            let newScaleFactor = zoomFactor * gesture.scale
+            setZoomFactor(newScaleFactor, animated: false)
+            gesture.scale = 1.0 // Reset scale for next gesture update
+            
+        case .ended:
+            let newScaleFactor = zoomFactor * gesture.scale
+            setZoomFactor(newScaleFactor, animated: true)
+            gesture.scale = 1.0
+            
+        default:
+            break
+        }
+    }
+    
+    func handleDoubleTap() {
+        // Toggle between 1x and 2x zoom
+        let targetZoom = zoomFactor > 1.5 ? 1.0 : 2.0
+        setZoomFactor(targetZoom, animated: true)
     }
 }
 
@@ -483,6 +572,7 @@ private struct CameraPreviewContainer: View {
     let session: AVCaptureSession
     let videoOrientation: AVCaptureVideoOrientation
     let controls: () -> AnyView
+    @ObservedObject var camera: CameraModel
     
     var body: some View {
         let maxWidth = geometry.size.width * 0.9
@@ -490,10 +580,31 @@ private struct CameraPreviewContainer: View {
         
         ZStack {
             // Camera preview
-            CameraPreview(session: session, videoOrientation: videoOrientation)
-                .frame(width: maxWidth, height: maxHeight)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .background(ViewUtilities.cardBackground(cornerRadius: 12))
+            CameraPreview(
+                session: session,
+                videoOrientation: videoOrientation,
+                onPinchGesture: { gesture in
+                    camera.handlePinchGesture(gesture)
+                },
+                onDoubleTap: {
+                    camera.handleDoubleTap()
+                }
+            )
+            .frame(width: maxWidth, height: maxHeight)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .background(ViewUtilities.cardBackground(cornerRadius: 12))
+            
+            // Zoom indicator (only show when zooming)
+            if camera.zoomFactor > 1.01 {
+                Text(String(format: "%.1fx", camera.zoomFactor))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.black.opacity(0.6))
+                    .cornerRadius(8)
+                    .position(x: maxWidth - 40, y: maxHeight - 40)
+            }
             
             // Controls overlay positioned relative to the full container
             AnyView(controls())
@@ -1022,7 +1133,8 @@ struct ContentView: View {
                                         isLandscape: isLandscape,
                                         session: camera.session,
                                         videoOrientation: videoOrientation,
-                                        controls: { AnyView(cameraPreviewControls()) }
+                                        controls: { AnyView(cameraPreviewControls()) },
+                                        camera: camera
                                     )
                                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 }
@@ -1109,7 +1221,8 @@ struct ContentView: View {
                                         isLandscape: isLandscape,
                                         session: camera.session,
                                         videoOrientation: videoOrientation,
-                                        controls: { AnyView(cameraPreviewControls()) }
+                                        controls: { AnyView(cameraPreviewControls()) },
+                                        camera: camera
                                     )
                                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 }
