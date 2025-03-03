@@ -46,6 +46,7 @@ struct CameraPreview: UIViewRepresentable {
     let videoOrientation: AVCaptureVideoOrientation
     var onPinchGesture: ((UIPinchGestureRecognizer) -> Void)?
     var onDoubleTap: (() -> Void)?
+    var onTapToFocus: ((CGPoint, CGRect, Bool) -> Void)?
     
     class PreviewView: UIView {
         override class var layerClass: AnyClass {
@@ -78,6 +79,16 @@ struct CameraPreview: UIViewRepresentable {
         doubleTapGesture.numberOfTapsRequired = 2
         view.addGestureRecognizer(doubleTapGesture)
         
+        // Add tap gesture recognizer for focus
+        let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
+        tapGesture.require(toFail: doubleTapGesture)
+        view.addGestureRecognizer(tapGesture)
+        
+        // Add long press gesture recognizer for focus lock
+        let longPressGesture = UILongPressGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleLongPress(_:)))
+        longPressGesture.minimumPressDuration = 0.5
+        view.addGestureRecognizer(longPressGesture)
+        
         return view
     }
     
@@ -103,6 +114,17 @@ struct CameraPreview: UIViewRepresentable {
         @objc func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
             parent.onDoubleTap?()
         }
+        
+        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+            let point = gesture.location(in: gesture.view)
+            parent.onTapToFocus?(point, gesture.view?.bounds ?? .zero, false)
+        }
+        
+        @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+            guard gesture.state == .began else { return }
+            let point = gesture.location(in: gesture.view)
+            parent.onTapToFocus?(point, gesture.view?.bounds ?? .zero, true)
+        }
     }
 }
 
@@ -113,6 +135,8 @@ class CameraModel: NSObject, ObservableObject {
     @Published var isPreviewActive = false
     @Published var photoCount: Int = UserDefaults.standard.integer(forKey: "photoCount")
     @Published var zoomFactor: CGFloat = 1.0
+    @Published var focusPoint: CGPoint?
+    @Published var isFocusLocked = false
     
     private var isCameraAuthorized = false
     private let output = AVCapturePhotoOutput()
@@ -346,6 +370,74 @@ class CameraModel: NSObject, ObservableObject {
         let targetZoom = zoomFactor > 1.5 ? 1.0 : 2.0
         setZoomFactor(targetZoom, animated: true)
     }
+    
+    func setFocus(at point: CGPoint, isLocked: Bool = false) {
+        guard let device = currentDevice,
+              device.isFocusPointOfInterestSupported,
+              device.isFocusModeSupported(.autoFocus) else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            // Convert point to focus point of interest
+            device.focusPointOfInterest = point
+            device.focusMode = isLocked ? .locked : .autoFocus
+            
+            // Set exposure point and mode
+            if device.isExposurePointOfInterestSupported {
+                device.exposurePointOfInterest = point
+                device.exposureMode = isLocked ? .locked : .continuousAutoExposure
+            }
+            
+            device.unlockForConfiguration()
+            
+            // Update UI state
+            DispatchQueue.main.async {
+                self.focusPoint = point
+                self.isFocusLocked = isLocked
+                
+                // Clear focus point after animation
+                if !isLocked {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        self.focusPoint = nil
+                    }
+                }
+            }
+        } catch {
+            print("Error setting focus: \(error.localizedDescription)")
+        }
+    }
+    
+    func handleTapToFocus(_ point: CGPoint, in bounds: CGRect, longPress: Bool = false) {
+        // Convert tap point to focus point of interest coordinates (0,0 to 1,1)
+        let focusPoint = CGPoint(
+            x: point.x / bounds.width,
+            y: point.y / bounds.height
+        )
+        
+        setFocus(at: focusPoint, isLocked: longPress)
+    }
+    
+    func unlockFocus() {
+        guard let device = currentDevice,
+              device.isFocusPointOfInterestSupported else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            device.focusMode = .continuousAutoFocus
+            if device.isExposurePointOfInterestSupported {
+                device.exposureMode = .continuousAutoExposure
+            }
+            device.unlockForConfiguration()
+            
+            DispatchQueue.main.async {
+                self.isFocusLocked = false
+                self.focusPoint = nil
+            }
+        } catch {
+            print("Error unlocking focus: \(error.localizedDescription)")
+        }
+    }
 }
 
 extension CameraModel: AVCapturePhotoCaptureDelegate {
@@ -565,7 +657,45 @@ extension View {
     }
 }
 
-// Camera preview container view
+// Add FocusSquare view
+private struct FocusSquare: View {
+    let point: CGPoint
+    let isLocked: Bool
+    @State private var isAnimating = false
+    
+    var body: some View {
+        let size: CGFloat = 85
+        let innerSize: CGFloat = isAnimating ? 70 : 85
+        
+        ZStack {
+            // Outer square
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white, lineWidth: 1.5)
+                .frame(width: size, height: size)
+            
+            // Inner square
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.white, lineWidth: 1.5)
+                .frame(width: innerSize, height: innerSize)
+            
+            // Lock indicator
+            if isLocked {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white)
+                    .offset(y: -(size/2 + 20))
+            }
+        }
+        .position(x: point.x, y: point.y)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.3).repeatCount(1, autoreverses: true)) {
+                isAnimating = true
+            }
+        }
+    }
+}
+
+// Update CameraPreviewContainer to include focus square
 private struct CameraPreviewContainer: View {
     let geometry: GeometryProxy
     let isLandscape: Bool
@@ -588,11 +718,25 @@ private struct CameraPreviewContainer: View {
                 },
                 onDoubleTap: {
                     camera.handleDoubleTap()
+                },
+                onTapToFocus: { point, bounds, isLocked in
+                    camera.handleTapToFocus(point, in: bounds, longPress: isLocked)
                 }
             )
             .frame(width: maxWidth, height: maxHeight)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .background(ViewUtilities.cardBackground(cornerRadius: 12))
+            
+            // Focus square
+            if let focusPoint = camera.focusPoint {
+                FocusSquare(
+                    point: CGPoint(
+                        x: focusPoint.x * maxWidth,
+                        y: focusPoint.y * maxHeight
+                    ),
+                    isLocked: camera.isFocusLocked
+                )
+            }
             
             // Zoom indicator (only show when zooming)
             if camera.zoomFactor > 1.01 {
