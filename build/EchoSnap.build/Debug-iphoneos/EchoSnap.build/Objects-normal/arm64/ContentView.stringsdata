@@ -7,7 +7,7 @@
         "key": "ES",
         "location": {
           "startingColumn": 30,
-          "startingLine": 579
+          "startingLine": 563
         }
       },
       {
@@ -15,7 +15,7 @@
         "key": "EchoSnap",
         "location": {
           "startingColumn": 30,
-          "startingLine": 590
+          "startingLine": 574
         }
       },
       {
@@ -23,7 +23,7 @@
         "key": "© 2025 nerdyStuff",
         "location": {
           "startingColumn": 30,
-          "startingLine": 594
+          "startingLine": 578
         }
       },
       {
@@ -31,7 +31,7 @@
         "key": "About Us",
         "location": {
           "startingColumn": 38,
-          "startingLine": 602
+          "startingLine": 586
         }
       },
       {
@@ -39,7 +39,7 @@
         "key": "Contact",
         "location": {
           "startingColumn": 38,
-          "startingLine": 616
+          "startingLine": 600
         }
       },
       {
@@ -47,7 +47,7 @@
         "key": "Buy Me a Coffee",
         "location": {
           "startingColumn": 38,
-          "startingLine": 631
+          "startingLine": 615
         }
       },
       {
@@ -55,7 +55,7 @@
         "key": "EchoSnap",
         "location": {
           "startingColumn": 18,
-          "startingLine": 869
+          "startingLine": 853
         }
       },
       {
@@ -63,7 +63,7 @@
         "key": "Tap to Select Reference Image",
         "location": {
           "startingColumn": 26,
-          "startingLine": 914
+          "startingLine": 898
         }
       },
       {
@@ -71,7 +71,7 @@
         "key": "Tap to Open Camera",
         "location": {
           "startingColumn": 26,
-          "startingLine": 944
+          "startingLine": 928
         }
       }
     ]

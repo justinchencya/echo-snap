@@ -493,15 +493,7 @@ private struct CameraPreviewContainer: View {
             CameraPreview(session: session, videoOrientation: videoOrientation)
                 .frame(width: maxWidth, height: maxHeight)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(.systemBackground))
-                        .shadow(color: .black.opacity(0.05), radius: 4)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.appGradientStart.opacity(0.1), lineWidth: 1)
-                )
+                .background(ViewUtilities.cardBackground(cornerRadius: 12))
             
             // Controls overlay positioned relative to the full container
             AnyView(controls())
@@ -526,15 +518,7 @@ private struct CapturedPhotoView: View {
                     .scaledToFit()
                     .frame(width: size.width, height: size.height)
                     .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-                    .background(
-                        RoundedRectangle(cornerRadius: cornerRadius)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: .black.opacity(0.05), radius: 4)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: cornerRadius)
-                            .stroke(Color.appGradientStart.opacity(0.1), lineWidth: 1)
-                    )
+                    .background(ViewUtilities.cardBackground(cornerRadius: cornerRadius))
                 
                 // Bottom-right buttons
                 VStack {
