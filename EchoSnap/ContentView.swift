@@ -350,7 +350,7 @@ private struct ViewUtilities {
             .fill(Color(.systemBackground))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.appGradientStart.opacity(0.1), lineWidth: 1)
+                    .stroke(Color.appGradientStart.opacity(0.3), lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.05), radius: 4)
     }
