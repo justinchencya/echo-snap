@@ -1326,7 +1326,8 @@ struct ContentView: View {
                                 EnhancedPlaceholder(action: { showImagePicker = true })
                             }
                         }
-                        .frame(width: (geometry.size.width - cardSpacing - cardPadding * 2 - 32) / 2)  // Account for both left and right margins
+                        .frame(width: (geometry.size.width - cardSpacing - cardPadding * 2 - 32) / 2)
+                        .scaleEffect(0.95)  // Scale to 95%
                         
                         // Right half: Camera
                         ZStack {
@@ -1354,7 +1355,8 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .frame(width: (geometry.size.width - cardSpacing - cardPadding * 2 - 32) / 2)  // Account for both left and right margins
+                        .frame(width: (geometry.size.width - cardSpacing - cardPadding * 2 - 32) / 2)
+                        .scaleEffect(0.95)  // Scale to 95%
                     }
                     .padding(.horizontal, cardPadding)
                     .padding(.top, cardPadding)
