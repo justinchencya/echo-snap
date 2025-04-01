@@ -44,7 +44,7 @@
       "synthesized" : {
         "table" : {
           "ASSETCATALOG_FILTER_FOR_DEVICE_MODEL" : "iPhone14,2",
-          "ASSETCATALOG_FILTER_FOR_DEVICE_OS_VERSION" : "18.2.1",
+          "ASSETCATALOG_FILTER_FOR_DEVICE_OS_VERSION" : "18.3.2",
           "ASSETCATALOG_FILTER_FOR_THINNING_DEVICE_CONFIGURATION" : "iPhone14,2",
           "BUILD_ACTIVE_RESOURCES_ONLY" : "YES",
           "CLANG_COVERAGE_MAPPING" : "YES",
@@ -54,7 +54,7 @@
           "ONLY_ACTIVE_ARCH" : "YES",
           "TARGET_DEVICE_IDENTIFIER" : "00008110-001210363CBA401E",
           "TARGET_DEVICE_MODEL" : "iPhone14,2",
-          "TARGET_DEVICE_OS_VERSION" : "18.2.1",
+          "TARGET_DEVICE_OS_VERSION" : "18.3.2",
           "TARGET_DEVICE_PLATFORM_NAME" : "iphoneos"
         }
       }
