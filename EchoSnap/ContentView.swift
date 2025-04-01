@@ -65,7 +65,7 @@ struct CameraPreview: UIViewRepresentable {
     
     func makeUIView(context: Context) -> PreviewView {
         let view = PreviewView()
-        view.backgroundColor = .black
+        view.backgroundColor = .systemBackground
         view.videoPreviewLayer.session = session
         view.videoPreviewLayer.videoGravity = .resizeAspect
         view.videoPreviewLayer.connection?.videoOrientation = videoOrientation
@@ -1027,6 +1027,34 @@ private struct JumpingCoffeeIcon: View {
     }
 }
 
+// Add GlowingIconButton before ContentView
+private struct GlowingIconButton: View {
+    let systemName: String
+    let action: () -> Void
+    
+    // Convert system name to asset name
+    private var imageName: String {
+        switch systemName {
+        case "xmark.circle.fill":
+            return "button-close"
+        case "checkmark.circle.fill":
+            return "button-accept"
+        case "arrow.counterclockwise.circle":
+            return "button-reset"
+        default:
+            return ""
+        }
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            Image(imageName)
+                .resizable()
+                .frame(width: 44, height: 44)
+        }
+    }
+}
+
 struct ContentView: View {
     @State private var showImagePicker = false
     @State private var referenceImage: UIImage?
@@ -1037,8 +1065,8 @@ struct ContentView: View {
     @State private var showInfoView = false
     
     private let buttonSize: CGFloat = 24
-    private let captureButtonSize: CGFloat = 60
-    private let buttonSpacing: CGFloat = 12  // Spacing between buttons
+    private let captureButtonSize: CGFloat = 54
+    private let buttonSpacing: CGFloat = 2
     private let standardPadding: CGFloat = 16  // Standard padding for all edges
     private let bannerHeight: CGFloat = 30  // Height for the title banner
     private let cardPadding: CGFloat = 12
@@ -1096,34 +1124,16 @@ struct ContentView: View {
     // Helper view for the photo action buttons
     private func photoActionButtons() -> some View {
         VStack(spacing: buttonSpacing) {
-            Button(action: {
+            GlowingIconButton(systemName: "checkmark.circle.fill") {
                 withAnimation(.spring()) {
                     camera.savePhotoAndReopen()
                 }
-            }) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: buttonSize))
-                    .foregroundColor(.white)
-                    .background(
-                        Circle()
-                            .fill(Color.appGradientStart)
-                            .frame(width: buttonSize + 8, height: buttonSize + 8)
-                    )
             }
             
-            Button(action: {
+            GlowingIconButton(systemName: "xmark.circle.fill") {
                 withAnimation(.spring()) {
                     camera.discardPhotoAndReopen()
                 }
-            }) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: buttonSize))
-                    .foregroundColor(.white)
-                    .background(
-                        Circle()
-                            .fill(Color.red.opacity(0.8))
-                            .frame(width: buttonSize + 8, height: buttonSize + 8)
-                    )
             }
         }
         .padding(standardPadding)
@@ -1131,18 +1141,20 @@ struct ContentView: View {
     
     // Helper view for the reference image buttons
     private func referenceImageButtons() -> some View {
-        HStack(spacing: buttonSpacing) {
-            if isImageTransformed {
-                Button(action: {
-                    shouldResetImage = true
-                }) {
-                    Image(systemName: "arrow.counterclockwise.circle")
-                        .font(.system(size: buttonSize))
-                        .foregroundColor(.appGradientStart)
+        VStack(spacing: buttonSpacing) {
+            GlowingIconButton(systemName: "xmark.circle.fill") {
+                withAnimation(.spring()) {
+                    self.referenceImage = nil
                 }
-                .padding([.bottom, .trailing], standardPadding)
+            }
+            
+            if isImageTransformed {
+                GlowingIconButton(systemName: "arrow.counterclockwise.circle") {
+                    shouldResetImage = true
+                }
             }
         }
+        .padding(standardPadding)
     }
     
     // Helper view for the camera preview controls
@@ -1157,33 +1169,23 @@ struct ContentView: View {
                     Circle()
                         .fill(Color.appGradientStart)
                         .frame(width: captureButtonSize, height: captureButtonSize)
-                        .shadow(color: .black.opacity(0.2), radius: 4)
                         .overlay(
                             Circle()
-                                .stroke(Color.white, lineWidth: 2)
+                                .stroke(Color.white.opacity(0.15), lineWidth: 0.1)
                                 .padding(4)
                         )
                 }
-                .padding(.bottom, standardPadding)
+                .padding(.bottom, standardPadding + 8)
             }
             
             // Top-right close button
             VStack {
                 HStack {
                     Spacer()
-                    Button(action: {
+                    GlowingIconButton(systemName: "xmark.circle.fill") {
                         withAnimation(.spring()) {
                             camera.togglePreview()
                         }
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: buttonSize))
-                            .foregroundColor(.white)
-                            .background(
-                                Circle()
-                                    .fill(Color.red.opacity(0.8))
-                                    .frame(width: buttonSize + 8, height: buttonSize + 8)
-                            )
                     }
                     .padding(standardPadding)
                 }
@@ -1311,34 +1313,11 @@ struct ContentView: View {
                                         cornerRadius: cardCornerRadius
                                     )
                                     
-                                    // Bottom-right buttons
+                                    // Top-right buttons
                                     VStack {
-                                        Spacer()
                                         HStack {
                                             Spacer()
                                             referenceImageButtons()
-                                        }
-                                    }
-                                    
-                                    // Top-right close button
-                                    VStack {
-                                        HStack {
-                                            Spacer()
-                                            Button(action: {
-                                                withAnimation(.spring()) {
-                                                    self.referenceImage = nil
-                                                }
-                                            }) {
-                                                Image(systemName: "xmark.circle.fill")
-                                                    .font(.system(size: buttonSize))
-                                                    .foregroundColor(.white)
-                                                    .background(
-                                                        Circle()
-                                                            .fill(Color.red.opacity(0.8))
-                                                            .frame(width: buttonSize + 8, height: buttonSize + 8)
-                                                    )
-                                            }
-                                            .padding(standardPadding)
                                         }
                                         Spacer()
                                     }
@@ -1399,34 +1378,11 @@ struct ContentView: View {
                                         cornerRadius: cardCornerRadius
                                     )
                                     
-                                    // Bottom-right buttons
+                                    // Top-right buttons
                                     VStack {
-                                        Spacer()
                                         HStack {
                                             Spacer()
                                             referenceImageButtons()
-                                        }
-                                    }
-                                    
-                                    // Top-right close button
-                                    VStack {
-                                        HStack {
-                                            Spacer()
-                                            Button(action: {
-                                                withAnimation(.spring()) {
-                                                    self.referenceImage = nil
-                                                }
-                                            }) {
-                                                Image(systemName: "xmark.circle.fill")
-                                                    .font(.system(size: buttonSize))
-                                                    .foregroundColor(.white)
-                                                    .background(
-                                                        Circle()
-                                                            .fill(Color.red.opacity(0.8))
-                                                            .frame(width: buttonSize + 8, height: buttonSize + 8)
-                                                    )
-                                            }
-                                            .padding(standardPadding)
                                         }
                                         Spacer()
                                     }

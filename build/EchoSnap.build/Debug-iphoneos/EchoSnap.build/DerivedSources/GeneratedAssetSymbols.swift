@@ -31,6 +31,15 @@ extension DeveloperToolsSupport.ColorResource {
 @available(iOS 17.0, macOS 14.0, tvOS 17.0, watchOS 10.0, *)
 extension DeveloperToolsSupport.ImageResource {
 
+    /// The "button-accept" asset catalog image resource.
+    static let buttonAccept = DeveloperToolsSupport.ImageResource(name: "button-accept", bundle: resourceBundle)
+
+    /// The "button-close" asset catalog image resource.
+    static let buttonClose = DeveloperToolsSupport.ImageResource(name: "button-close", bundle: resourceBundle)
+
+    /// The "button-reset" asset catalog image resource.
+    static let buttonReset = DeveloperToolsSupport.ImageResource(name: "button-reset", bundle: resourceBundle)
+
 }
 
 // MARK: - Color Symbol Extensions -
@@ -70,6 +79,33 @@ extension SwiftUI.ShapeStyle where Self == SwiftUI.Color {
 @available(macCatalyst, unavailable)
 extension AppKit.NSImage {
 
+    /// The "button-accept" asset catalog image.
+    static var buttonAccept: AppKit.NSImage {
+#if !targetEnvironment(macCatalyst)
+        .init(resource: .buttonAccept)
+#else
+        .init()
+#endif
+    }
+
+    /// The "button-close" asset catalog image.
+    static var buttonClose: AppKit.NSImage {
+#if !targetEnvironment(macCatalyst)
+        .init(resource: .buttonClose)
+#else
+        .init()
+#endif
+    }
+
+    /// The "button-reset" asset catalog image.
+    static var buttonReset: AppKit.NSImage {
+#if !targetEnvironment(macCatalyst)
+        .init(resource: .buttonReset)
+#else
+        .init()
+#endif
+    }
+
 }
 #endif
 
@@ -77,6 +113,33 @@ extension AppKit.NSImage {
 @available(iOS 17.0, tvOS 17.0, *)
 @available(watchOS, unavailable)
 extension UIKit.UIImage {
+
+    /// The "button-accept" asset catalog image.
+    static var buttonAccept: UIKit.UIImage {
+#if !os(watchOS)
+        .init(resource: .buttonAccept)
+#else
+        .init()
+#endif
+    }
+
+    /// The "button-close" asset catalog image.
+    static var buttonClose: UIKit.UIImage {
+#if !os(watchOS)
+        .init(resource: .buttonClose)
+#else
+        .init()
+#endif
+    }
+
+    /// The "button-reset" asset catalog image.
+    static var buttonReset: UIKit.UIImage {
+#if !os(watchOS)
+        .init(resource: .buttonReset)
+#else
+        .init()
+#endif
+    }
 
 }
 #endif
@@ -178,6 +241,26 @@ extension DeveloperToolsSupport.ImageResource {
     }
 
 }
+
+#if canImport(AppKit)
+@available(macOS 14.0, *)
+@available(macCatalyst, unavailable)
+extension AppKit.NSImage {
+
+    private convenience init?(thinnableResource: DeveloperToolsSupport.ImageResource?) {
+#if !targetEnvironment(macCatalyst)
+        if let resource = thinnableResource {
+            self.init(resource: resource)
+        } else {
+            return nil
+        }
+#else
+        return nil
+#endif
+    }
+
+}
+#endif
 
 #if canImport(UIKit)
 @available(iOS 17.0, tvOS 17.0, *)
