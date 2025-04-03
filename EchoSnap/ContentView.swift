@@ -166,7 +166,9 @@ class CameraModel: NSObject, ObservableObject {
     }
     
     func togglePreview() {
-        isPreviewActive.toggle()
+        withAnimation(.spring()) {
+            isPreviewActive.toggle()
+        }
         if isPreviewActive {
             if !session.isRunning {
                 DispatchQueue.global(qos: .userInitiated).async {
@@ -485,8 +487,10 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
         if let imageData = photo.fileDataRepresentation(),
            let image = UIImage(data: imageData) {
             DispatchQueue.main.async {
-                self.recentImage = image
-                self.isPhotoTaken = true
+                withAnimation(.spring()) {
+                    self.recentImage = image
+                    self.isPhotoTaken = true
+                }
                 self.session.stopRunning()
             }
         }
