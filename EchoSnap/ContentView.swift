@@ -799,7 +799,6 @@ private struct CameraPreviewContainer: View {
                 }
             )
             .frame(width: maxWidth, height: maxHeight)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
             .background(ViewUtilities.cardBackground(cornerRadius: 12))
             // Add drag gesture to the entire preview when focus point exists
             .gesture(
@@ -1223,15 +1222,6 @@ struct ContentView: View {
         }
         .frame(height: bannerHeight)
         .padding(.horizontal, cardPadding)
-    }
-    
-    // Add a custom modifier for landscape padding
-    private struct LandscapePaddingModifier: ViewModifier {
-        let isLandscape: Bool
-        
-        func body(content: Content) -> some View {
-            content
-        }
     }
     
     // Add a new view for the enhanced placeholder:
