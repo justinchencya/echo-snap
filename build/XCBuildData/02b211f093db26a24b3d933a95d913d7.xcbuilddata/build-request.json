@@ -1,8 +1,8 @@
 {
   "buildCommand" : {
-    "command" : "build",
-    "skipDependencies" : false,
-    "style" : "buildAndRun"
+    "command" : "prepareForIndexing",
+    "enableIndexBuildArena" : false,
+    "targets" : null
   },
   "configuredTargets" : [
     {
@@ -10,7 +10,7 @@
     }
   ],
   "containerPath" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/EchoSnap.xcodeproj",
-  "continueBuildingAfterErrors" : false,
+  "continueBuildingAfterErrors" : true,
   "dependencyScope" : "workspace",
   "enableIndexBuildArena" : false,
   "hideShellScriptEnvironment" : false,
