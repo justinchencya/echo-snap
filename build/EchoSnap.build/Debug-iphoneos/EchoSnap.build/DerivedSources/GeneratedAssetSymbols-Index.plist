@@ -36,6 +36,16 @@
 			<key>swiftSymbol</key>
 			<string>buttonReset</string>
 		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justinchencya/Documents/AI Apps/EchoSnap/EchoSnap/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameLogoInfoPage</string>
+			<key>relativePath</key>
+			<string>./logo-info-page.imageset</string>
+			<key>swiftSymbol</key>
+			<string>logoInfoPage</string>
+		</dict>
 	</array>
 	<key>symbols</key>
 	<array/>

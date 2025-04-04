@@ -40,6 +40,9 @@ extension DeveloperToolsSupport.ImageResource {
     /// The "button-reset" asset catalog image resource.
     static let buttonReset = DeveloperToolsSupport.ImageResource(name: "button-reset", bundle: resourceBundle)
 
+    /// The "logo-info-page" asset catalog image resource.
+    static let logoInfoPage = DeveloperToolsSupport.ImageResource(name: "logo-info-page", bundle: resourceBundle)
+
 }
 
 // MARK: - Color Symbol Extensions -
@@ -106,6 +109,15 @@ extension AppKit.NSImage {
 #endif
     }
 
+    /// The "logo-info-page" asset catalog image.
+    static var logoInfoPage: AppKit.NSImage {
+#if !targetEnvironment(macCatalyst)
+        .init(resource: .logoInfoPage)
+#else
+        .init()
+#endif
+    }
+
 }
 #endif
 
@@ -136,6 +148,15 @@ extension UIKit.UIImage {
     static var buttonReset: UIKit.UIImage {
 #if !os(watchOS)
         .init(resource: .buttonReset)
+#else
+        .init()
+#endif
+    }
+
+    /// The "logo-info-page" asset catalog image.
+    static var logoInfoPage: UIKit.UIImage {
+#if !os(watchOS)
+        .init(resource: .logoInfoPage)
 #else
         .init()
 #endif

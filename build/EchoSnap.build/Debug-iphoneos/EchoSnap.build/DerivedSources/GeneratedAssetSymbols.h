@@ -15,4 +15,7 @@ static NSString * const ACImageNameButtonClose AC_SWIFT_PRIVATE = @"button-close
 /// The "button-reset" asset catalog image resource.
 static NSString * const ACImageNameButtonReset AC_SWIFT_PRIVATE = @"button-reset";
 
+/// The "logo-info-page" asset catalog image resource.
+static NSString * const ACImageNameLogoInfoPage AC_SWIFT_PRIVATE = @"logo-info-page";
+
 #undef AC_SWIFT_PRIVATE

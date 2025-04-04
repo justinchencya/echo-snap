@@ -888,36 +888,14 @@ private struct InfoView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var camera: CameraModel
     
-    private var appIcon: UIImage? {
-        if let iconsDictionary = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
-           let primaryIconsDictionary = iconsDictionary["CFBundlePrimaryIcon"] as? [String: Any],
-           let iconFiles = primaryIconsDictionary["CFBundleIconFiles"] as? [String],
-           let lastIcon = iconFiles.last {
-            return UIImage(named: lastIcon)
-        }
-        return nil
-    }
-
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
-                    if let icon = appIcon {
-                        Image(uiImage: icon)
-                            .resizable()
-                            .frame(width: 80, height: 80)
-                            .cornerRadius(16)
-                    } else {
-                        // Fallback to app name if icon is not found
-                        Text("ES")
-                            .font(.system(size: 40, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 80, height: 80)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color.appGradientStart)
-                            )
-                    }
+                    Image("logo-info-page")
+                        .resizable()
+                        .frame(width: 80, height: 80)
+                        .cornerRadius(16)
                     
                     VStack(spacing: 16) {
                         Text("EchoSnap")
