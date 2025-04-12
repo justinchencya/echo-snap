@@ -5,7 +5,48 @@
 	<key>colors</key>
 	<array/>
 	<key>images</key>
-	<array/>
+	<array>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justinchencya/Documents/AI Apps/EchoSnap/EchoSnap/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameButtonAccept</string>
+			<key>relativePath</key>
+			<string>./button-accept.imageset</string>
+			<key>swiftSymbol</key>
+			<string>buttonAccept</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justinchencya/Documents/AI Apps/EchoSnap/EchoSnap/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameButtonClose</string>
+			<key>relativePath</key>
+			<string>./button-close.imageset</string>
+			<key>swiftSymbol</key>
+			<string>buttonClose</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justinchencya/Documents/AI Apps/EchoSnap/EchoSnap/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameButtonReset</string>
+			<key>relativePath</key>
+			<string>./button-reset.imageset</string>
+			<key>swiftSymbol</key>
+			<string>buttonReset</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justinchencya/Documents/AI Apps/EchoSnap/EchoSnap/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameLogoInfoPage</string>
+			<key>relativePath</key>
+			<string>./logo-info-page.imageset</string>
+			<key>swiftSymbol</key>
+			<string>logoInfoPage</string>
+		</dict>
+	</array>
 	<key>symbols</key>
 	<array/>
 </dict>

@@ -2,7 +2,7 @@
 //  Item+CoreDataProperties.swift
 //  
 //
-//  Created by Justin Chen on 12/29/24.
+//  Created by Justin Chen on 4/11/25.
 //
 //  This file was automatically generated and should not be edited.
 //

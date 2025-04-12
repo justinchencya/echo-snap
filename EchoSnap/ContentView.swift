@@ -799,7 +799,6 @@ private struct CameraPreviewContainer: View {
                 }
             )
             .frame(width: maxWidth, height: maxHeight)
-            .background(ViewUtilities.cardBackground(cornerRadius: 12))
             // Add drag gesture to the entire preview when focus point exists
             .gesture(
                 camera.focusPoint == nil ? nil :
