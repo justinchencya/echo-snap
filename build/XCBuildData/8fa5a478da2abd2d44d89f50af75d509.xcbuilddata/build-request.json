@@ -41,17 +41,17 @@
     "overrides" : {
       "synthesized" : {
         "table" : {
-          "ASSETCATALOG_FILTER_FOR_DEVICE_MODEL" : "iPhone17,1",
+          "ASSETCATALOG_FILTER_FOR_DEVICE_MODEL" : "iPhone17,2",
           "ASSETCATALOG_FILTER_FOR_DEVICE_OS_VERSION" : "18.2",
-          "ASSETCATALOG_FILTER_FOR_THINNING_DEVICE_CONFIGURATION" : "iPhone17,1",
+          "ASSETCATALOG_FILTER_FOR_THINNING_DEVICE_CONFIGURATION" : "iPhone17,2",
           "BUILD_ACTIVE_RESOURCES_ONLY" : "YES",
           "CLANG_COVERAGE_MAPPING" : "YES",
           "CLANG_PROFILE_DATA_DIRECTORY" : "/Users/justinchencya/Library/Developer/Xcode/DerivedData/EchoSnap-bikewcdaxiqwrdajhysfkclyxhzn/CodeCoverage/ProfileData",
           "ENABLE_PREVIEWS" : "NO",
           "ENABLE_XOJIT_PREVIEWS" : "NO",
           "ONLY_ACTIVE_ARCH" : "YES",
-          "TARGET_DEVICE_IDENTIFIER" : "D48D75EE-8AAA-41A3-843A-BC9DB1F1FD2A",
-          "TARGET_DEVICE_MODEL" : "iPhone17,1",
+          "TARGET_DEVICE_IDENTIFIER" : "D84EBCDF-7345-4D28-B0F7-CC9B384EFC76",
+          "TARGET_DEVICE_MODEL" : "iPhone17,2",
           "TARGET_DEVICE_OS_VERSION" : "18.2",
           "TARGET_DEVICE_PLATFORM_NAME" : "iphonesimulator"
         }

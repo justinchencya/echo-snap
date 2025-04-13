@@ -780,8 +780,9 @@ private struct CameraPreviewContainer: View {
     @GestureState private var dragState: CGFloat = 0
     
     var body: some View {
-        let maxWidth = geometry.size.width * 0.9
-        let maxHeight = geometry.size.height * 0.9
+        let containerScale: CGFloat = 0.9  // Extract the common scale factor
+        let maxWidth = geometry.size.width * containerScale
+        let maxHeight = geometry.size.height * containerScale
         
         ZStack {
             // Camera preview

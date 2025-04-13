@@ -1,8 +1,8 @@
 {
   "buildCommand" : {
-    "command" : "prepareForIndexing",
-    "enableIndexBuildArena" : false,
-    "targets" : null
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildAndRun"
   },
   "configuredTargets" : [
     {
@@ -10,7 +10,7 @@
     }
   ],
   "containerPath" : "/Users/justinchencya/Documents/AI Apps/EchoSnap/EchoSnap.xcodeproj",
-  "continueBuildingAfterErrors" : true,
+  "continueBuildingAfterErrors" : false,
   "dependencyScope" : "workspace",
   "enableIndexBuildArena" : false,
   "hideShellScriptEnvironment" : false,
@@ -19,14 +19,12 @@
     "activeArchitecture" : "arm64",
     "activeRunDestination" : {
       "disableOnlyActiveArch" : false,
-      "platform" : "iphoneos",
-      "sdk" : "iphoneos18.4",
-      "sdkVariant" : "iphoneos",
+      "platform" : "iphonesimulator",
+      "sdk" : "iphonesimulator18.4",
+      "sdkVariant" : "iphonesimulator",
       "supportedArchitectures" : [
-        "arm64e",
-        "arm64v8",
         "arm64",
-        "armv8"
+        "x86_64"
       ],
       "targetArchitecture" : "arm64"
     },
@@ -43,27 +41,26 @@
     "overrides" : {
       "synthesized" : {
         "table" : {
-          "ASSETCATALOG_FILTER_FOR_DEVICE_MODEL" : "iPhone14,2",
-          "ASSETCATALOG_FILTER_FOR_DEVICE_OS_VERSION" : "18.3.2",
-          "ASSETCATALOG_FILTER_FOR_THINNING_DEVICE_CONFIGURATION" : "iPhone14,2",
+          "ASSETCATALOG_FILTER_FOR_DEVICE_MODEL" : "iPhone17,2",
+          "ASSETCATALOG_FILTER_FOR_DEVICE_OS_VERSION" : "18.2",
+          "ASSETCATALOG_FILTER_FOR_THINNING_DEVICE_CONFIGURATION" : "iPhone17,2",
           "BUILD_ACTIVE_RESOURCES_ONLY" : "YES",
           "CLANG_COVERAGE_MAPPING" : "YES",
           "CLANG_PROFILE_DATA_DIRECTORY" : "/Users/justinchencya/Library/Developer/Xcode/DerivedData/EchoSnap-bikewcdaxiqwrdajhysfkclyxhzn/CodeCoverage/ProfileData",
           "ENABLE_PREVIEWS" : "NO",
-          "ENABLE_XOJIT_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "YES",
           "ONLY_ACTIVE_ARCH" : "YES",
-          "TARGET_DEVICE_IDENTIFIER" : "00008110-001210363CBA401E",
-          "TARGET_DEVICE_MODEL" : "iPhone14,2",
-          "TARGET_DEVICE_OS_VERSION" : "18.3.2",
-          "TARGET_DEVICE_PLATFORM_NAME" : "iphoneos"
+          "TARGET_DEVICE_IDENTIFIER" : "D84EBCDF-7345-4D28-B0F7-CC9B384EFC76",
+          "TARGET_DEVICE_MODEL" : "iPhone17,2",
+          "TARGET_DEVICE_OS_VERSION" : "18.2",
+          "TARGET_DEVICE_PLATFORM_NAME" : "iphonesimulator"
         }
       }
     }
   },
-  "qos" : "default",
   "schemeCommand" : "launch",
   "showNonLoggedProgress" : true,
-  "useDryRun" : true,
+  "useDryRun" : false,
   "useImplicitDependencies" : true,
   "useLegacyBuildLocations" : false,
   "useParallelTargets" : true
