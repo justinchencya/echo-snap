@@ -413,7 +413,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EchoSnap/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "EchoSnap needs camera access to take photos";
+				INFOPLIST_KEY_NSCameraUsageDescription = "EchoSnap requires camera access to help you take comparison photos while referencing your original images";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "EchoSnap needs permission to save captured photos to your library";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "EchoSnap needs access to your photos to select reference images";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -426,11 +426,15 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = xyz.nerdyStuff.echosnap;
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.nerdystuff.echosnap;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -446,7 +450,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EchoSnap/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "EchoSnap needs camera access to take photos";
+				INFOPLIST_KEY_NSCameraUsageDescription = "EchoSnap requires camera access to help you take comparison photos while referencing your original images";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "EchoSnap needs permission to save captured photos to your library";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "EchoSnap needs access to your photos to select reference images";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -459,11 +463,15 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = xyz.nerdyStuff.echosnap;
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.nerdystuff.echosnap;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
