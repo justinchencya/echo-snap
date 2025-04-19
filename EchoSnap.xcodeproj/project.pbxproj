@@ -413,9 +413,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EchoSnap/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "EchoSnap requires camera access to help you take comparison photos while referencing your original images";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "EchoSnap needs permission to save captured photos to your library";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "EchoSnap needs access to your photos to select reference images";
+				INFOPLIST_KEY_NSCameraUsageDescription = "EchoSnap requires camera access to help you take new photos while referencing your existing images.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "EchoSnap needs permission to save captured photos to your library.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "EchoSnap needs access to your photos to select reference images and save new photos.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -450,9 +450,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EchoSnap/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "EchoSnap requires camera access to help you take comparison photos while referencing your original images";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "EchoSnap needs permission to save captured photos to your library";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "EchoSnap needs access to your photos to select reference images";
+				INFOPLIST_KEY_NSCameraUsageDescription = "EchoSnap requires camera access to help you take new photos while referencing your existing images.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "EchoSnap needs permission to save captured photos to your library.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "EchoSnap needs access to your photos to select reference images and save new photos.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

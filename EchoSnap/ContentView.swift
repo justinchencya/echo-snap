@@ -153,6 +153,14 @@ class CameraModel: NSObject, ObservableObject {
     override init() {
         super.init()
         checkPermissions()
+        checkPhotoLibraryPermissions()
+    }
+    
+    private func checkPhotoLibraryPermissions() {
+        PHPhotoLibrary.requestAuthorization { status in
+            // We don't need to do anything with the status here
+            // Just requesting to show the permission dialog
+        }
     }
     
     private func restartCameraSession() {
