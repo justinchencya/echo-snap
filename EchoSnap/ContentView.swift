@@ -133,7 +133,6 @@ class CameraModel: NSObject, ObservableObject {
     @Published var recentImage: UIImage?
     @Published var isPhotoTaken = false
     @Published var isPreviewActive = false
-    @Published var photoCount: Int = UserDefaults.standard.integer(forKey: "photoCount")
     @Published var zoomFactor: CGFloat = 1.0
     @Published var focusPoint: CGPoint?
     @Published var isFocusLocked = false
@@ -217,23 +216,12 @@ class CameraModel: NSObject, ObservableObject {
     func savePhotoAndReopen() {
         if let image = recentImage {
             UIImageWriteToSavedPhotosAlbum(image, self, #selector(self.image(_:didFinishSavingWithError:contextInfo:)), nil)
-            incrementPhotoCount()
         }
         restartCameraSession()
     }
     
     func discardPhotoAndReopen() {
         restartCameraSession()
-    }
-    
-    func incrementPhotoCount() {
-        photoCount += 1
-        UserDefaults.standard.set(photoCount, forKey: "photoCount")
-    }
-    
-    func resetPhotoCount() {
-        photoCount = 0
-        UserDefaults.standard.set(photoCount, forKey: "photoCount")
     }
     
     private func checkPermissions() {
@@ -935,30 +923,6 @@ private struct InfoView: View {
                                     .fill(Color.appGradientStart.opacity(0.1))
                             )
                         }
-                        
-                        Link(destination: URL(string: "https://buymeacoffee.com/nerdystuff")!) {
-                            HStack {
-                                Image(systemName: "cup.and.saucer.fill")
-                                Text("Buy Me a Coffee")
-                                Spacer()
-                                Image(systemName: "arrow.up.right.circle.fill")
-                            }
-                            .foregroundColor(.appGradientStart)
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(camera.photoCount >= 5 ? 
-                                        Color.appGradientStart.opacity(0.2) :
-                                        Color.appGradientStart.opacity(0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(camera.photoCount >= 5 ? 
-                                                Color.appGradientStart.opacity(0.3) :
-                                                Color.clear,
-                                                lineWidth: 2)
-                                    )
-                            )
-                        }
                     }
                     .padding(.horizontal)
                     
@@ -981,30 +945,6 @@ private struct InfoView: View {
             }
         }
         .navigationViewStyle(StackNavigationViewStyle()) // Forces modal style in all orientations
-        .onDisappear {
-            // Reset counter when info view is dismissed
-            camera.resetPhotoCount()
-        }
-    }
-}
-
-// Add JumpingCoffeeIcon view before ContentView
-private struct JumpingCoffeeIcon: View {
-    @State private var isJumping = false
-    
-    var body: some View {
-        Image(systemName: "cup.and.saucer.fill")
-            .font(.system(size: 24))
-            .foregroundColor(.appGradientStart)
-            .offset(y: isJumping ? -5 : 0)
-            .animation(
-                Animation.easeInOut(duration: 0.5)
-                    .repeatForever(autoreverses: true),
-                value: isJumping
-            )
-            .onAppear {
-                isJumping = true
-            }
     }
 }
 
@@ -1178,22 +1118,16 @@ struct ContentView: View {
     // Add title banner view
     private func titleBanner() -> some View {
         ZStack {
-            // Title centered in the entire space, ignoring other elements
             Text("EchoSnap")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.appGradientStart)
             
-            // Info/Coffee button aligned to the trailing edge
             HStack {
                 Spacer()
                 Button(action: { showInfoView = true }) {
-                    if camera.photoCount >= 5 {
-                        JumpingCoffeeIcon()
-                    } else {
-                        Image(systemName: "info.circle")
-                            .font(.system(size: buttonSize))
-                            .foregroundColor(.appGradientStart)
-                    }
+                    Image(systemName: "info.circle")
+                        .font(.system(size: buttonSize))
+                        .foregroundColor(.appGradientStart)
                 }
                 .frame(width: 44)  // Fixed width for the button area
             }
