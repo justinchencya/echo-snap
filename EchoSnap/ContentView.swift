@@ -9,6 +9,7 @@ import SwiftUI
 import CoreData
 import AVFoundation
 import UIKit
+import PhotosUI
 
 extension Color {
     static let appGradientStart = Color(hex: "4A90E2")
@@ -501,6 +502,17 @@ struct ImagePicker: UIViewControllerRepresentable {
         let picker = UIImagePickerController()
         picker.delegate = context.coordinator
         picker.sourceType = .photoLibrary
+        
+        // Check photo library permission before presenting
+        PHPhotoLibrary.requestAuthorization { status in
+            DispatchQueue.main.async {
+                if status != .authorized {
+                    // If not authorized, dismiss the picker
+                    presentationMode.wrappedValue.dismiss()
+                }
+            }
+        }
+        
         return picker
     }
     
@@ -527,6 +539,33 @@ struct ImagePicker: UIViewControllerRepresentable {
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
             parent.presentationMode.wrappedValue.dismiss()
         }
+    }
+}
+
+// Add PhotoLibraryPermissionHandler before ImagePicker
+private struct PhotoLibraryPermissionHandler: ViewModifier {
+    @Binding var showImagePicker: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: showImagePicker) { newValue in
+                if newValue {
+                    PHPhotoLibrary.requestAuthorization { status in
+                        DispatchQueue.main.async {
+                            if status != .authorized {
+                                showImagePicker = false
+                            }
+                        }
+                    }
+                }
+            }
+    }
+}
+
+// Add extension for the modifier
+extension View {
+    func handlePhotoLibraryPermission(showImagePicker: Binding<Bool>) -> some View {
+        self.modifier(PhotoLibraryPermissionHandler(showImagePicker: showImagePicker))
     }
 }
 
@@ -1339,6 +1378,7 @@ struct ContentView: View {
         .sheet(isPresented: $showImagePicker) {
             ImagePicker(selectedImage: $referenceImage)
         }
+        .handlePhotoLibraryPermission(showImagePicker: $showImagePicker)
         .sheet(isPresented: $showInfoView) {
             InfoView(camera: camera)
         }
