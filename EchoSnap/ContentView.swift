@@ -6,14 +6,12 @@
 //
 
 import SwiftUI
-import CoreData
 import AVFoundation
 import UIKit
 import PhotosUI
 
 extension Color {
     static let appGradientStart = Color(hex: "4A90E2")
-    static let appGradientEnd = Color(hex: "357ABD")
 }
 
 extension Color {
@@ -153,19 +151,14 @@ class CameraModel: NSObject, ObservableObject {
     override init() {
         super.init()
         checkPermissions()
-        checkPhotoLibraryPermissions()
     }
     
-    private func checkPhotoLibraryPermissions() {
-        PHPhotoLibrary.requestAuthorization { status in
-            // We don't need to do anything with the status here
-            // Just requesting to show the permission dialog
-        }
-    }
     
     private func restartCameraSession() {
+        // Clear image data for memory management
         recentImage = nil
         isPhotoTaken = false
+        
         if !session.isRunning {
             DispatchQueue.global(qos: .userInitiated).async {
                 self.session.startRunning()
@@ -177,15 +170,16 @@ class CameraModel: NSObject, ObservableObject {
         withAnimation(.spring()) {
             isPreviewActive.toggle()
         }
-        if isPreviewActive {
-            if !session.isRunning {
-                DispatchQueue.global(qos: .userInitiated).async {
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            if self.isPreviewActive {
+                if !self.session.isRunning {
                     self.session.startRunning()
                 }
-            }
-        } else {
-            if session.isRunning {
-                session.stopRunning()
+            } else {
+                if self.session.isRunning {
+                    self.session.stopRunning()
+                }
             }
         }
     }
@@ -199,24 +193,9 @@ class CameraModel: NSObject, ObservableObject {
         // Enable high quality capture
         settings.isHighResolutionPhotoEnabled = true
         
-        // Get the video orientation from the interface orientation
+        // Set video orientation for capture
         if let connection = output.connection(with: .video) {
-            if let interfaceOrientation = UIWindow.key?.windowScene?.interfaceOrientation {
-                let videoOrientation: AVCaptureVideoOrientation
-                switch interfaceOrientation {
-                case .portrait:
-                    videoOrientation = .portrait
-                case .portraitUpsideDown:
-                    videoOrientation = .portraitUpsideDown
-                case .landscapeLeft:
-                    videoOrientation = .landscapeLeft
-                case .landscapeRight:
-                    videoOrientation = .landscapeRight
-                default:
-                    videoOrientation = .portrait
-                }
-                connection.videoOrientation = videoOrientation
-            }
+            connection.videoOrientation = CameraUtilities.videoOrientation()
         }
         
         output.capturePhoto(with: settings, delegate: self)
@@ -271,7 +250,7 @@ class CameraModel: NSObject, ObservableObject {
             
             // Store current device and configure zoom
             currentDevice = device
-            maxZoomFactor = min(device.maxAvailableVideoZoomFactor, 5.0) // Limit max zoom to 5x
+            maxZoomFactor = min(device.maxAvailableVideoZoomFactor, AppConstants.Camera.maxZoomFactor)
             
             // Configure camera for high quality photo capture
             try device.lockForConfiguration()
@@ -322,8 +301,10 @@ class CameraModel: NSObject, ObservableObject {
     }
     
     deinit {
-        if session.isRunning {
-            session.stopRunning()
+        DispatchQueue.global(qos: .userInitiated).async {
+            if self.session.isRunning {
+                self.session.stopRunning()
+            }
         }
     }
     
@@ -335,7 +316,7 @@ class CameraModel: NSObject, ObservableObject {
             let clampedFactor = max(minZoomFactor, min(factor, maxZoomFactor))
             
             if animated {
-                device.ramp(toVideoZoomFactor: Double(clampedFactor), withRate: 4.0)
+                device.ramp(toVideoZoomFactor: Double(clampedFactor), withRate: AppConstants.Camera.zoomAnimationRate)
             } else {
                 device.videoZoomFactor = Double(clampedFactor)
             }
@@ -350,7 +331,7 @@ class CameraModel: NSObject, ObservableObject {
     }
     
     func handlePinchGesture(_ gesture: UIPinchGestureRecognizer) {
-        guard let device = currentDevice else { return }
+        guard currentDevice != nil else { return }
         
         switch gesture.state {
         case .changed:
@@ -396,9 +377,8 @@ class CameraModel: NSObject, ObservableObject {
     }
     
     func handleExposureAdjustment(_ translation: CGFloat) {
-        // Convert vertical translation to exposure bias
-        // 100 points of translation = 1.0 exposure bias
-        let biasChange = Float(-translation / 100.0)
+        // Convert vertical translation to exposure bias with higher sensitivity for low-latency response
+        let biasChange = Float(-translation) / AppConstants.Camera.exposureSensitivity
         let newBias = exposureBias + biasChange
         setExposureBias(newBias)
     }
@@ -419,10 +399,13 @@ class CameraModel: NSObject, ObservableObject {
             if device.isExposurePointOfInterestSupported {
                 device.exposurePointOfInterest = point
                 device.exposureMode = isLocked ? .locked : .continuousAutoExposure
-                
-                // Reset exposure bias when changing focus point
-                if !isLocked {
-                    setExposureBias(0.0)
+            }
+            
+            // Always reset exposure bias to optimal (0.0) when setting focus
+            // This ensures optimal exposure regardless of previous adjustments
+            device.setExposureTargetBias(0.0) { _ in
+                DispatchQueue.main.async {
+                    self.exposureBias = 0.0
                 }
             }
             
@@ -435,7 +418,7 @@ class CameraModel: NSObject, ObservableObject {
                 
                 // Clear focus point after animation if not locked
                 if !isLocked {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.Camera.focusClearDelay) {
                         if !self.isAdjustingExposure {
                             self.focusPoint = nil
                         }
@@ -467,6 +450,14 @@ class CameraModel: NSObject, ObservableObject {
             if device.isExposurePointOfInterestSupported {
                 device.exposureMode = .continuousAutoExposure
             }
+            
+            // Reset exposure bias to optimal when unlocking focus
+            device.setExposureTargetBias(0.0) { _ in
+                DispatchQueue.main.async {
+                    self.exposureBias = 0.0
+                }
+            }
+            
             device.unlockForConfiguration()
             
             DispatchQueue.main.async {
@@ -488,7 +479,10 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
                     self.recentImage = image
                     self.isPhotoTaken = true
                 }
-                self.session.stopRunning()
+                
+                DispatchQueue.global(qos: .userInitiated).async {
+                    self.session.stopRunning()
+                }
             }
         }
     }
@@ -511,15 +505,6 @@ struct ImagePicker: UIViewControllerRepresentable {
         picker.delegate = context.coordinator
         picker.sourceType = .photoLibrary
         
-        // Check photo library permission before presenting
-        PHPhotoLibrary.requestAuthorization { status in
-            DispatchQueue.main.async {
-                if status != .authorized {
-                    // If not authorized, dismiss the picker
-                    presentationMode.wrappedValue.dismiss()
-                }
-            }
-        }
         
         return picker
     }
@@ -550,13 +535,13 @@ struct ImagePicker: UIViewControllerRepresentable {
     }
 }
 
-// Add PhotoLibraryPermissionHandler before ImagePicker
-private struct PhotoLibraryPermissionHandler: ViewModifier {
+// Photo Library Permission Handler
+struct PhotoLibraryPermissionHandler: ViewModifier {
     @Binding var showImagePicker: Bool
     
     func body(content: Content) -> some View {
         content
-            .onChange(of: showImagePicker) { newValue in
+            .onChange(of: showImagePicker) { _, newValue in
                 if newValue {
                     PHPhotoLibrary.requestAuthorization { status in
                         DispatchQueue.main.async {
@@ -570,7 +555,6 @@ private struct PhotoLibraryPermissionHandler: ViewModifier {
     }
 }
 
-// Add extension for the modifier
 extension View {
     func handlePhotoLibraryPermission(showImagePicker: Binding<Bool>) -> some View {
         self.modifier(PhotoLibraryPermissionHandler(showImagePicker: showImagePicker))
@@ -633,6 +617,60 @@ struct ZoomableImageView: View {
         isTransformed = scale != 1.0 || offset != .zero || rotation != .zero
     }
     
+    private func resetTransformation() {
+        withAnimation(.spring()) {
+            scale = 1.0
+            offset = .zero
+            rotation = .zero
+        }
+        checkTransformation()
+    }
+    
+    private var magnificationGesture: some Gesture {
+        MagnificationGesture()
+            .onChanged { value in
+                let delta = value / lastScale
+                lastScale = value
+                scale = scale * delta
+                checkTransformation()
+            }
+            .onEnded { _ in
+                lastScale = 1.0
+            }
+    }
+    
+    private var rotationGesture: some Gesture {
+        RotationGesture()
+            .onChanged { value in
+                let delta = value - lastRotation
+                lastRotation = value
+                rotation += delta
+                checkTransformation()
+            }
+            .onEnded { _ in
+                lastRotation = .zero
+            }
+    }
+    
+    private var dragGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                let delta = CGSize(
+                    width: value.translation.width - lastOffset.width,
+                    height: value.translation.height - lastOffset.height
+                )
+                lastOffset = value.translation
+                offset = CGSize(
+                    width: offset.width + delta.width,
+                    height: offset.height + delta.height
+                )
+                checkTransformation()
+            }
+            .onEnded { _ in
+                lastOffset = .zero
+            }
+    }
+    
     var body: some View {
         GeometryReader { geometry in
             let size = ViewUtilities.calculateImageSize(geometry: geometry, image: image, isLandscape: isLandscape)
@@ -648,70 +686,22 @@ struct ZoomableImageView: View {
                 .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
                 .gesture(
                     SimultaneousGesture(
-                        SimultaneousGesture(
-                            MagnificationGesture()
-                                .onChanged { value in
-                                    let delta = value / lastScale
-                                    lastScale = value
-                                    scale = scale * delta
-                                    checkTransformation()
-                                }
-                                .onEnded { _ in
-                                    lastScale = 1.0
-                                },
-                            RotationGesture()
-                                .onChanged { value in
-                                    let delta = value - lastRotation
-                                    lastRotation = value
-                                    rotation += delta
-                                    checkTransformation()
-                                }
-                                .onEnded { _ in
-                                    lastRotation = .zero
-                                }
-                        ),
-                        DragGesture()
-                            .onChanged { value in
-                                let delta = CGSize(
-                                    width: value.translation.width - lastOffset.width,
-                                    height: value.translation.height - lastOffset.height
-                                )
-                                lastOffset = value.translation
-                                offset = CGSize(
-                                    width: offset.width + delta.width,
-                                    height: offset.height + delta.height
-                                )
-                                checkTransformation()
-                            }
-                            .onEnded { _ in
-                                lastOffset = .zero
-                            }
+                        SimultaneousGesture(magnificationGesture, rotationGesture),
+                        dragGesture
                     )
                 )
                 .highPriorityGesture(
                     TapGesture(count: 2)
-                        .onEnded {
-                            withAnimation(.spring()) {
-                                scale = 1.0
-                                offset = .zero
-                                rotation = .zero
-                            }
-                            checkTransformation()
-                        }
+                        .onEnded { resetTransformation() }
                 )
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { _ in }
                 )
-                .onChange(of: shouldReset) { newValue in
+                .onChange(of: shouldReset) { _, newValue in
                     if newValue {
-                        withAnimation(.spring()) {
-                            scale = 1.0
-                            offset = .zero
-                            rotation = .zero
-                        }
+                        resetTransformation()
                         shouldReset = false
-                        checkTransformation()
                     }
                 }
         }
@@ -736,32 +726,63 @@ extension View {
     }
 }
 
-// Add ExposureControl view
-private struct ExposureControl: View {
+// Exposure Control View
+struct ExposureControl: View {
     let exposureBias: Float
     let isAdjusting: Bool
+    @State private var isOptimalHighlight = false
     
     var body: some View {
-        VStack(spacing: 8) {
-            // Sun icon
-            Image(systemName: exposureBias > 0 ? "sun.max.fill" : "sun.min.fill")
-                .font(.system(size: 20))
-                .foregroundColor(.white)
+        ZStack {
+            // Vertical line background
+            Rectangle()
+                .fill(Color.white.opacity(0.3))
+                .frame(width: 2, height: 40)
             
-            // Exposure value
-            Text(String(format: "%.1f", exposureBias))
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.white)
-                .opacity(isAdjusting ? 1 : 0)
+            // Sun icon that slides on the line - centered by default
+            Image(systemName: "sun.max.fill")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(sunIconColor)
+                .offset(y: calculateSunOffset())
+                .animation(AppConstants.Animations.exposureLinear, value: exposureBias)
+                .onChange(of: exposureBias) { _, newValue in
+                    // Briefly highlight when exposure is reset to optimal
+                    if newValue == 0.0 {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isOptimalHighlight = true
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isOptimalHighlight = false
+                            }
+                        }
+                    }
+                }
         }
-        .padding(8)
-        .background(Color.black.opacity(0.6))
-        .cornerRadius(8)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
+    }
+    
+    private var sunIconColor: Color {
+        if isOptimalHighlight {
+            return .yellow
+        } else {
+            return .white
+        }
+    }
+    
+    // Calculate sun position based on exposure bias
+    private func calculateSunOffset() -> CGFloat {
+        // Map exposure bias (-8 to 8) to vertical position (-20 to 20)
+        // Center the sun at 0 (exposureBias = 0), with positive bias moving up (brighter) and negative bias moving down (darker)
+        let normalizedBias = CGFloat(exposureBias) / 8.0
+        // Center the sun by starting at 0 and moving up/down from there
+        return -normalizedBias * 20
     }
 }
 
-// Update FocusSquare to remove the drag gesture
-private struct FocusSquare: View {
+// Focus Square View
+struct FocusSquare: View {
     let point: CGPoint
     let isLocked: Bool
     let exposureBias: Float
@@ -797,15 +818,15 @@ private struct FocusSquare: View {
         }
         .position(x: point.x, y: point.y)
         .onAppear {
-            withAnimation(.easeInOut(duration: 0.3).repeatCount(1, autoreverses: true)) {
+            withAnimation(AppConstants.Animations.focusAnimation) {
                 isAnimating = true
             }
         }
     }
 }
 
-// Update CameraPreviewContainer to handle exposure adjustment from anywhere
-private struct CameraPreviewContainer: View {
+// Camera Preview Container
+struct CameraPreviewContainer: View {
     let geometry: GeometryProxy
     let isLandscape: Bool
     let session: AVCaptureSession
@@ -842,12 +863,13 @@ private struct CameraPreviewContainer: View {
                         .updating($dragState) { value, state, _ in
                             state = value.translation.height
                             camera.isAdjustingExposure = true
+                            // Use accumulated translation for more responsive adjustment
                             camera.handleExposureAdjustment(value.translation.height)
                         }
                         .onEnded { _ in
                             camera.isAdjustingExposure = false
                             if !camera.isFocusLocked {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.Camera.exposureClearDelay) {
                                     camera.focusPoint = nil
                                 }
                             }
@@ -867,16 +889,23 @@ private struct CameraPreviewContainer: View {
                 )
             }
             
-            // Zoom indicator (only show when zooming)
+            // Zoom indicator (only show when zooming) - positioned at bottom right corner within bounds
             if camera.zoomFactor > 1.01 {
-                Text(String(format: "%.1fx", camera.zoomFactor))
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.black.opacity(0.6))
-                    .cornerRadius(8)
-                    .position(x: maxWidth - 40, y: maxHeight - 40)
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Text(String(format: "%.1fx", camera.zoomFactor))
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(8)
+                    }
+                }
+                .padding(.trailing, 12)
+                .padding(.bottom, 12)
             }
             
             // Controls overlay positioned relative to the full container
@@ -885,8 +914,8 @@ private struct CameraPreviewContainer: View {
     }
 }
 
-// Captured photo view
-private struct CapturedPhotoView: View {
+// Captured Photo View
+struct CapturedPhotoView: View {
     let image: UIImage
     let cornerRadius: CGFloat
     let photoActions: () -> AnyView
@@ -918,8 +947,8 @@ private struct CapturedPhotoView: View {
     }
 }
 
-// Add InfoView struct before ContentView
-private struct InfoView: View {
+// Info View
+struct InfoView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var camera: CameraModel
     
@@ -995,8 +1024,8 @@ private struct InfoView: View {
     }
 }
 
-// Add GlowingIconButton before ContentView
-private struct GlowingIconButton: View {
+// Glowing Icon Button
+struct GlowingIconButton: View {
     let systemName: String
     let action: () -> Void
     
@@ -1032,14 +1061,6 @@ struct ContentView: View {
     @State private var orientation = UIDevice.current.orientation
     @State private var showInfoView = false
     
-    private let buttonSize: CGFloat = 24
-    private let captureButtonSize: CGFloat = 54
-    private let buttonSpacing: CGFloat = 2
-    private let standardPadding: CGFloat = 16  // Standard padding for all edges
-    private let bannerHeight: CGFloat = 30  // Height for the title banner
-    private let cardPadding: CGFloat = 12
-    private let cardSpacing: CGFloat = 4
-    private let cardCornerRadius: CGFloat = 12
     
     private var isLandscape: Bool {
         // Get the interface orientation instead of device orientation
@@ -1048,21 +1069,7 @@ struct ContentView: View {
     }
     
     private var videoOrientation: AVCaptureVideoOrientation {
-        // Get the interface orientation instead of device orientation
-        let interfaceOrientation = UIWindow.key?.windowScene?.interfaceOrientation ?? .portrait
-        
-        switch interfaceOrientation {
-        case .portrait:
-            return .portrait
-        case .portraitUpsideDown:
-            return .portraitUpsideDown
-        case .landscapeLeft:
-            return .landscapeLeft
-        case .landscapeRight:
-            return .landscapeRight
-        default:
-            return .portrait
-        }
+        return CameraUtilities.videoOrientation()
     }
     
     private func handleOrientationChange(_ newOrientation: UIDeviceOrientation) {
@@ -1075,11 +1082,14 @@ struct ContentView: View {
                 // Only handle camera preview if it's active and no photo is taken
                 if camera.isPreviewActive && !camera.isPhotoTaken {
                     camera.isPreviewActive = false
-                    camera.session.stopRunning()
                     
-                    // Reopen camera preview after a short delay
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        camera.togglePreview()
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        camera.session.stopRunning()
+                        
+                        // Reopen camera preview after a short delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            camera.togglePreview()
+                        }
                     }
                 }
             default:
@@ -1091,7 +1101,7 @@ struct ContentView: View {
     
     // Helper view for the photo action buttons
     private func photoActionButtons() -> some View {
-        VStack(spacing: buttonSpacing) {
+        VStack(spacing: AppConstants.UI.buttonSpacing) {
             GlowingIconButton(systemName: "checkmark.circle.fill") {
                 withAnimation(.spring()) {
                     camera.savePhotoAndReopen()
@@ -1104,12 +1114,12 @@ struct ContentView: View {
                 }
             }
         }
-        .padding(standardPadding)
+        .padding(AppConstants.UI.standardPadding)
     }
     
     // Helper view for the reference image buttons
     private func referenceImageButtons() -> some View {
-        VStack(spacing: buttonSpacing) {
+        VStack(spacing: AppConstants.UI.buttonSpacing) {
             GlowingIconButton(systemName: "xmark.circle.fill") {
                 withAnimation(.spring()) {
                     self.referenceImage = nil
@@ -1122,7 +1132,7 @@ struct ContentView: View {
                 }
             }
         }
-        .padding(standardPadding)
+        .padding(AppConstants.UI.standardPadding)
     }
     
     // Helper view for the camera preview controls
@@ -1136,14 +1146,14 @@ struct ContentView: View {
                 }) {
                     Circle()
                         .fill(Color.appGradientStart)
-                        .frame(width: captureButtonSize, height: captureButtonSize)
+                        .frame(width: AppConstants.UI.captureButtonSize, height: AppConstants.UI.captureButtonSize)
                         .overlay(
                             Circle()
                                 .stroke(Color.white.opacity(0.15), lineWidth: 0.1)
                                 .padding(4)
                         )
                 }
-                .padding(.bottom, standardPadding + 8)
+                .padding(.bottom, AppConstants.UI.standardPadding + 8)
             }
             
             // Top-right close button
@@ -1155,7 +1165,7 @@ struct ContentView: View {
                             camera.togglePreview()
                         }
                     }
-                    .padding(standardPadding)
+                    .padding(AppConstants.UI.standardPadding)
                 }
                 Spacer()
             }
@@ -1173,18 +1183,18 @@ struct ContentView: View {
                 Spacer()
                 Button(action: { showInfoView = true }) {
                     Image(systemName: "info.circle")
-                        .font(.system(size: buttonSize))
+                        .font(.system(size: AppConstants.UI.buttonSize))
                         .foregroundColor(.appGradientStart)
                 }
                 .frame(width: 44)  // Fixed width for the button area
             }
         }
-        .frame(height: bannerHeight)
-        .padding(.horizontal, cardPadding)
+        .frame(height: AppConstants.UI.bannerHeight)
+        .padding(.horizontal, AppConstants.UI.cardPadding)
     }
     
-    // Add a new view for the enhanced placeholder:
-    private struct EnhancedPlaceholder: View {
+    // Enhanced Placeholder View
+    struct EnhancedPlaceholder: View {
         let action: () -> Void
         
         var body: some View {
@@ -1214,8 +1224,8 @@ struct ContentView: View {
         }
     }
     
-    // Simplify EnhancedCameraPlaceholder
-    private struct EnhancedCameraPlaceholder: View {
+    // Enhanced Camera Placeholder View  
+    struct EnhancedCameraPlaceholder: View {
         let action: () -> Void
         
         var body: some View {
@@ -1251,10 +1261,10 @@ struct ContentView: View {
             GeometryReader { geometry in
                 if isLandscape {
                     // Landscape layout
-                    HStack(spacing: cardSpacing) {
+                    HStack(spacing: AppConstants.UI.cardSpacing) {
                         // Left half: Reference Image
                         ZStack {
-                            ViewUtilities.cardBackground(cornerRadius: cardCornerRadius)
+                            ViewUtilities.cardBackground(cornerRadius: AppConstants.UI.cardCornerRadius)
                             
                             if let referenceImage = referenceImage {
                                 ZStack {
@@ -1263,7 +1273,7 @@ struct ContentView: View {
                                         shouldReset: $shouldResetImage,
                                         isTransformed: $isImageTransformed,
                                         isLandscape: true,
-                                        cornerRadius: cardCornerRadius
+                                        cornerRadius: AppConstants.UI.cardCornerRadius
                                     )
                                     
                                     // Top-right buttons
@@ -1279,19 +1289,19 @@ struct ContentView: View {
                                 EnhancedPlaceholder(action: { showImagePicker = true })
                             }
                         }
-                        .frame(width: (geometry.size.width - cardSpacing - cardPadding * 2 - 32) / 2)
-                        .scaleEffect(0.95)  // Scale to 95%
+                        .frame(width: (geometry.size.width - AppConstants.UI.cardSpacing - AppConstants.UI.cardPadding * 2 - 32) / 2)
+                        .scaleEffect(AppConstants.UI.scaleEffect)
                         
                         // Right half: Camera
                         ZStack {
-                            ViewUtilities.cardBackground(cornerRadius: cardCornerRadius)
+                            ViewUtilities.cardBackground(cornerRadius: AppConstants.UI.cardCornerRadius)
                             
                             if !camera.isPreviewActive {
                                 EnhancedCameraPlaceholder(action: { camera.togglePreview() })
                             } else if let capturedImage = camera.recentImage, camera.isPhotoTaken {
                                 CapturedPhotoView(
                                     image: capturedImage,
-                                    cornerRadius: cardCornerRadius,
+                                    cornerRadius: AppConstants.UI.cardCornerRadius,
                                     photoActions: { AnyView(photoActionButtons()) }
                                 )
                             } else {
@@ -1308,20 +1318,20 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .frame(width: (geometry.size.width - cardSpacing - cardPadding * 2 - 32) / 2)
+                        .frame(width: (geometry.size.width - AppConstants.UI.cardSpacing - AppConstants.UI.cardPadding * 2 - 32) / 2)
                         .scaleEffect(0.95)  // Scale to 95%
                     }
-                    .padding(.horizontal, cardPadding)
-                    .padding(.top, cardPadding)
+                    .padding(.horizontal, AppConstants.UI.cardPadding)
+                    .padding(.top, AppConstants.UI.cardPadding)
                     .padding(.bottom, 16)  // Add bottom padding
                     .padding(.leading, 16) // Notch protection
                     .padding(.trailing, 16) // Right margin
                 } else {
                     // Portrait layout
-                    VStack(spacing: cardSpacing) {
+                    VStack(spacing: AppConstants.UI.cardSpacing) {
                         // Top half: Reference Image
                         ZStack {
-                            ViewUtilities.cardBackground(cornerRadius: cardCornerRadius)
+                            ViewUtilities.cardBackground(cornerRadius: AppConstants.UI.cardCornerRadius)
                             
                             if let referenceImage = referenceImage {
                                 ZStack {
@@ -1330,7 +1340,7 @@ struct ContentView: View {
                                         shouldReset: $shouldResetImage,
                                         isTransformed: $isImageTransformed,
                                         isLandscape: false,
-                                        cornerRadius: cardCornerRadius
+                                        cornerRadius: AppConstants.UI.cardCornerRadius
                                     )
                                     
                                     // Top-right buttons
@@ -1346,18 +1356,18 @@ struct ContentView: View {
                                 EnhancedPlaceholder(action: { showImagePicker = true })
                             }
                         }
-                        .frame(height: (geometry.size.height - cardSpacing - cardPadding * 2 - 16) / 2)
+                        .frame(height: (geometry.size.height - AppConstants.UI.cardSpacing - AppConstants.UI.cardPadding * 2 - 16) / 2)
                         
                         // Bottom half: Camera
                         ZStack {
-                            ViewUtilities.cardBackground(cornerRadius: cardCornerRadius)
+                            ViewUtilities.cardBackground(cornerRadius: AppConstants.UI.cardCornerRadius)
                             
                             if !camera.isPreviewActive {
                                 EnhancedCameraPlaceholder(action: { camera.togglePreview() })
                             } else if let capturedImage = camera.recentImage, camera.isPhotoTaken {
                                 CapturedPhotoView(
                                     image: capturedImage,
-                                    cornerRadius: cardCornerRadius,
+                                    cornerRadius: AppConstants.UI.cardCornerRadius,
                                     photoActions: { AnyView(photoActionButtons()) }
                                 )
                             } else {
@@ -1374,10 +1384,10 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .frame(height: (geometry.size.height - cardSpacing - cardPadding * 2 - 16) / 2)
+                        .frame(height: (geometry.size.height - AppConstants.UI.cardSpacing - AppConstants.UI.cardPadding * 2 - 16) / 2)
                     }
-                    .padding(.horizontal, cardPadding)
-                    .padding(.top, cardPadding)
+                    .padding(.horizontal, AppConstants.UI.cardPadding)
+                    .padding(.top, AppConstants.UI.cardPadding)
                     .padding(.bottom, 16)
                 }
             }
@@ -1404,5 +1414,58 @@ extension UIWindow {
     static var key: UIWindow? {
         guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return nil }
         return scene.windows.first(where: { $0.isKeyWindow })
+    }
+}
+
+// MARK: - Constants & Utilities
+private enum AppConstants {
+    enum UI {
+        static let buttonSize: CGFloat = 24
+        static let captureButtonSize: CGFloat = 54
+        static let buttonSpacing: CGFloat = 2
+        static let standardPadding: CGFloat = 16
+        static let bannerHeight: CGFloat = 30
+        static let cardPadding: CGFloat = 12
+        static let cardSpacing: CGFloat = 4
+        static let cardCornerRadius: CGFloat = 12
+        static let containerScale: CGFloat = 0.9
+        static let imageScale: CGFloat = 0.9
+        static let scaleEffect: CGFloat = 0.95
+    }
+    
+    enum Camera {
+        static let maxZoomFactor: CGFloat = 5.0
+        static let minExposureBias: Float = -8.0
+        static let maxExposureBias: Float = 8.0
+        static let zoomAnimationRate: Float = 4.0
+        static let exposureSensitivity: Float = 50.0
+        static let orientationDelay: TimeInterval = 0.5
+        static let focusClearDelay: TimeInterval = 1.0
+        static let exposureClearDelay: TimeInterval = 0.5
+    }
+    
+    enum Animations {
+        static var spring: SwiftUI.Animation { SwiftUI.Animation.spring() }
+        static var exposureLinear: SwiftUI.Animation { SwiftUI.Animation.linear(duration: 0.05) }
+        static var focusAnimation: SwiftUI.Animation { SwiftUI.Animation.easeInOut(duration: 0.3).repeatCount(1, autoreverses: true) }
+    }
+}
+
+private enum CameraUtilities {
+    static func videoOrientation() -> AVCaptureVideoOrientation {
+        let interfaceOrientation = UIWindow.key?.windowScene?.interfaceOrientation ?? .portrait
+        
+        switch interfaceOrientation {
+        case .portrait:
+            return .portrait
+        case .portraitUpsideDown:
+            return .portraitUpsideDown
+        case .landscapeLeft:
+            return .landscapeLeft
+        case .landscapeRight:
+            return .landscapeRight
+        default:
+            return .portrait
+        }
     }
 }
