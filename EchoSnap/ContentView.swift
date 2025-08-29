@@ -1153,7 +1153,7 @@ struct ContentView: View {
                                 .padding(4)
                         )
                 }
-                .padding(.bottom, AppConstants.UI.standardPadding + 8)
+                .padding(.bottom, captureButtonBottomPadding)
             }
             
             // Top-right close button
@@ -1169,6 +1169,22 @@ struct ContentView: View {
                 }
                 Spacer()
             }
+        }
+    }
+    
+    // Calculate appropriate bottom padding for capture button to maintain consistent distance from camera preview border
+    private var captureButtonBottomPadding: CGFloat {
+        let baseSpacing = AppConstants.UI.standardPadding + 8 // 24 points from camera preview border
+        
+        if isLandscape {
+            // In landscape, camera preview is scaled down to 90%, so we need extra padding
+            // to account for the 5% margin at the bottom (since containerScale = 0.9)
+            let containerMargin = (1.0 - AppConstants.UI.containerScale) / 2.0 // 0.05 (5%)
+            let extraPaddingNeeded = containerMargin * UIScreen.main.bounds.height
+            return baseSpacing + extraPaddingNeeded
+        } else {
+            // Portrait mode: standard spacing from camera preview border
+            return baseSpacing
         }
     }
     
